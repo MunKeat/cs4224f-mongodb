@@ -1,3 +1,7 @@
+import os
+import pandas as pd
+
+
 class Data:
     # TODO: Set as Configuration
     DEBUG = True
