@@ -1,14 +1,11 @@
+from config import parameters as conf
 import os
 import pandas as pd
 
 
 class Data:
-    # TODO: Set as Configuration
-    DEBUG = True
-    DATA_PATH = None
-
     def debug(self, message):
-        if self.DEBUG:
+        if conf['debug']:
             print(message)
 
     def read_original_csv(self, table):
@@ -28,12 +25,12 @@ class Data:
                          "c_ytd_payment", "c_payment_cnt", "c_delivery_cnt",
                          "c_data"],
             # Orders
-            'orders': ["w_id", "d_id", "o_id", "c_id", "o_carrier_id",
+            'order': ["w_id", "d_id", "o_id", "c_id", "o_carrier_id",
                        "o_ol_cnt", "o_all_local", "o_entry_d"],
             # Item
             'item': ["i_id", "i_name", "i_price", "i_im_id", "i_data"],
             # Orderline
-            'orderline': ["w_id", "d_id", "o_id", "ol_number", "ol_i_id",
+            'order-line': ["w_id", "d_id", "o_id", "ol_number", "ol_i_id",
                           "ol_delivery_d", "ol_amount", "ol_supply_w_id",
                           "ol_quantity", "ol_dist_info"],
             # Stock
@@ -44,7 +41,7 @@ class Data:
 
         }[table]
         filename = table + ".csv"
-        filepath = os.path.join(os.path.sep, self.DATA_PATH, filename)
+        filepath = os.path.join(os.path.sep, conf['data-path'], filename)
         dataframe = pd.read_csv(filepath, na_values='null',
                                 header=None, dtype=str)
         dataframe.columns = columns
@@ -52,7 +49,7 @@ class Data:
         return dataframe
 
     def helper_write_csv(self, dataframe, filename, null_value='null'):
-        filepath = os.path.join(os.path.sep, self.DATA_PATH, filename)
+        filepath = os.path.join(os.path.sep, conf['data-path'], filename)
         dataframe.to_csv(filepath, na_rep="null", header=False,
                          index=False)
 
