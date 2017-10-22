@@ -48,29 +48,39 @@ def upload_data():
                             "--file", filepath], stdout=open(os.devnull, 'wb'))
 
 def preprocess_data():
-    def convert_str_to_list(string):
+    def convert_str_to_list(string, is_int=False):
         # Remove bracket
-        array = string.strip("[]").split(",")
-        array = [element.replace("'", "").strip() for element in array]
+        array = string.strip("[]").replace("'", "").split(",")
+        if is_int:
+            array = [int(val.strip()) for val in array]
+        else:
+            array = [(string.strip()) for string in array]
         return array
     # Process orders; convert string into array
     debug("Begin preprocessing of orders collection\n")
     csv_generator = Data()
     order_update_request = []
-    order_insert_request = []
     orderlines = csv_generator.read_original_csv("order-line")
     # Make parallel the following
     def convert_orders_attr_to_array(order):
         _id = order['_id']
-        popular_item_id = convert_str_to_list(order['popular_item_id'])
+        w_id = order['w_id']
+        d_id = order['d_id']
+        o_id = order['o_id']
+        popular_item_id = convert_str_to_list(order['popular_item_id'], True)
         popular_item_name = convert_str_to_list(order['popular_item_name'])
-        ordered_items = convert_str_to_list(order['ordered_items'])
-        # Convert to proper type
-        popular_item_id = [int(id) for id in popular_item_id]
-        popular_item_name = [name for name in popular_item_name]
-        ordered_items = [int(id) for id in ordered_items]
+        ordered_items = convert_str_to_list(order['ordered_items'], True)
+        # Get list of orderlines
+        orderline_set = orderlines[(orderlines["w_id"] == w_id) &
+                                   (orderlines["d_id"] == d_id) &
+                                   (orderlines["o_id"] == o_id)]
+        orderline_set = orderline_set[["ol_number", "ol_i_id", "ol_amount",
+                                       "ol_supply_w_id", "ol_quantity",
+                                       "ol_dist_info"]]
+        orderline_set = orderline_set.to_dict('records')
         # To Update
-        update_elements = {"popular_item_id": popular_item_id,
+        update_elements = {"orderline": orderline_set,
+                           "popular_item_id": popular_item_id,
                            "popular_item_name": popular_item_name,
                            "ordered_items": ordered_items}
         # Update
@@ -82,34 +92,10 @@ def preprocess_data():
     order_update_request = pool.map(convert_orders_attr_to_array,
                                     db.orders.find())
     end = time.time()
-    debug("Parallel processing of convert_orders_attr_to_array took {}s"\
+    debug("Parallel processing of convert_orders_attr_to_array took {}s\n"\
           .format(end - start))
     try:
         db.orders.bulk_write(order_update_request)
-    except BulkWriteError as error:
-        debug("Preprocessing of orders collection failed\n")
-        print(error.details)
-    debug("Preprocessing of orders collection Part I complete\n")
-    # Dataframe access is not included above;
-    # pandas is not necessarily threadsafe
-    for order in db.orders.find():
-        _id = order['_id']
-        w_id = order['w_id']
-        d_id = order['d_id']
-        o_id = order['o_id']
-        # Insert list of documents
-        orderline_set = orderlines[(orderlines["w_id"] == w_id) &
-                                   (orderlines["d_id"] == d_id) &
-                                   (orderlines["o_id"] == o_id)]
-        orderline_set = orderline_set[["ol_number", "ol_i_id", "ol_amount",
-                                       "ol_supply_w_id", "ol_quantity",
-                                       "ol_dist_info"]]
-        orderline_set = orderline_set.to_dict('records')
-        insert_element = {"orderline": orderline_set}
-        insert = InsertOne({"_id": _id}, {"$set": insert_element})
-        order_insert_request.append(insert)
-    try:
-        db.orders.bulk_write(order_insert_request)
     except BulkWriteError as error:
         debug("Preprocessing of orders collection failed\n")
         print(error.details)
@@ -118,6 +104,7 @@ def preprocess_data():
 
 def cleanup():
     connection.drop_database(conf["database"])
+    debug("Dropped database {}\n".format(conf["database"]))
 
 
 def main():
