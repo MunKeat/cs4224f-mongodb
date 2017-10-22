@@ -64,6 +64,31 @@ class Data:
             result[child_attribute] = renamed_attribute_name
         return result
 
+    def to_distinct_list(self, x):
+        return str(list(set(x)))  # .replace('[', '{').replace(']','}')
+
+    def to_list(self, x):
+        return str(list(x))
+
+    def get_preprocessed_orderline(self):
+        " Return orderline dataframe with item name "
+        df_orderline = self.read_original_csv("order-line")
+        df_item = self.read_original_csv("item")
+        processsed_orderline = pd.merge(df_orderline, df_item,
+                                        left_on=["ol_i_id"], right_on=["i_id"],
+                                        how="left")
+        processsed_orderline = processsed_orderline[["w_id", "d_id", "o_id",
+                                                     "ol_number", "ol_i_id",
+                                                     "i_name",
+                                                     "ol_delivery_d",
+                                                     "ol_amount",
+                                                     "ol_supply_w_id",
+                                                     "ol_quantity",
+                                                     "ol_dist_info"]]
+        processsed_orderline.rename(columns={'i_name': 'ol_i_name'},
+                                    inplace=True)
+        return processsed_orderline
+
     def create_warehouse(self):
         filepath = self.get_full_filepath("mongo_warehouse.csv")
         df_warehouse = self.read_original_csv("warehouse")
@@ -114,7 +139,56 @@ class Data:
             return ("district", filepath)
 
     def create_order(self):
-        pass
+        filepath = self.get_full_filepath("mongo_orders.csv")
+        df_orders = self.read_original_csv("order")
+        df_orderlines = self.get_preprocessed_orderline()
+        # Get popular items
+        orderline_agg_id = ['w_id', 'd_id', 'o_id']
+        # 1. Get orderline(s) with maximum quantity per order
+        grp_pop_product = df_orderlines[df_orderlines.groupby(
+            orderline_agg_id)['ol_quantity'].transform(max) ==
+            df_orderlines['ol_quantity']]
+        grp_pop_product = grp_pop_product[["w_id", "d_id", "o_id", "ol_i_id",
+                                           "ol_i_name", "ol_quantity"]]
+        # 2. Get popular item ID(s) as a list
+        grp_pop_ids = grp_pop_product.groupby(orderline_agg_id)['ol_i_id'].\
+                                      agg([self.to_list]).reset_index()
+        grp_pop_ids.rename(columns={'to_list': 'popular_item_id'},
+                           inplace=True)
+        # 3. Get popular item name(s) as a list
+        grp_pop_names = grp_pop_product.groupby(orderline_agg_id)['ol_i_name']\
+                                       .agg([self.to_list]).reset_index()
+        grp_pop_names.rename(columns={'to_list': 'popular_item_name'},
+                             inplace=True)
+        # 4. Get popular item quantity
+        grp_pop_qty = grp_pop_product.groupby(orderline_agg_id)['ol_quantity']\
+                                     .agg([max]).reset_index()
+        grp_pop_qty.rename(columns={'max': 'popular_item_qty'},
+                           inplace=True)
+        # 5. Get list of all item IDs per order
+        grp_order_ids = grp_pop_product.groupby(orderline_agg_id)['ol_i_id'].\
+                                      agg([self.to_distinct_list]).\
+                                      reset_index()
+        grp_order_ids.rename(columns={'to_list': 'ordered_items'},
+                           inplace=True)
+        # 6. Get merged
+        processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
+                                    merge(grp_pop_names, on=orderline_agg_id).\
+                                    merge(grp_pop_qty, on=orderline_agg_id).\
+                                    merge(grp_order_ids, on=orderline_agg_id)
+        # 7. Get list of orderline
+        # grp_orderline = df_orderlines.groupby(orderline_agg_id)\
+        #                                 [["ol_number", "ol_i_id",
+        #                                   "ol_delivery_d", "ol_amount",
+        #                                   "ol_supply_w_id", "ol_quantity",
+        #                                   "ol_dist_info"]].agg([self.to_list])\
+        #                                   .reset_index()
+        self.helper_write_csv(processed_orders, filepath)
+        # Return filepath if exist
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("orders", filepath)
+
+
 
     def create_customer(self):
         filepath = self.get_full_filepath("mongo_customer.csv")
@@ -158,7 +232,7 @@ class Data:
                                                processed_stock.shape))
         # Create key
         new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
-        processed_district.rename(columns=new_columns, inplace=True)
+        processed_stock.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("district_info", ["s_dist_01",
                                                               "s_dist_02",
@@ -180,7 +254,7 @@ class Data:
         list_of_processed_files = []
         list_of_processed_files.append(self.create_warehouse())
         list_of_processed_files.append(self.create_district())
-        # list_of_processed_files.append(self.create_order())
+        list_of_processed_files.append(self.create_order())
         list_of_processed_files.append(self.create_customer())
         list_of_processed_files.append(self.create_stock())
         return list_of_processed_files
