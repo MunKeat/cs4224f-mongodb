@@ -1,6 +1,8 @@
 from config import parameters as conf
+from pathos.multiprocessing import ProcessingPool as Pool
 import os
 import pandas as pd
+import time
 
 
 class Data:
@@ -65,7 +67,7 @@ class Data:
         return result
 
     def to_distinct_list(self, x):
-        return str(list(set(x)))  # .replace('[', '{').replace(']','}')
+        return str(list(set(x)))
 
     def to_list(self, x):
         return str(list(x))
@@ -74,6 +76,7 @@ class Data:
         " Return orderline dataframe with item name "
         df_orderline = self.read_original_csv("order-line")
         df_item = self.read_original_csv("item")
+        df_item = df_item[["i_id", "i_name"]]
         processsed_orderline = pd.merge(df_orderline, df_item,
                                         left_on=["ol_i_id"], right_on=["i_id"],
                                         how="left")
@@ -169,25 +172,17 @@ class Data:
         grp_order_ids = grp_pop_product.groupby(orderline_agg_id)['ol_i_id'].\
                                       agg([self.to_distinct_list]).\
                                       reset_index()
-        grp_order_ids.rename(columns={'to_list': 'ordered_items'},
-                           inplace=True)
+        grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
+                             inplace=True)
         # 6. Get merged
         processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
                                     merge(grp_pop_names, on=orderline_agg_id).\
                                     merge(grp_pop_qty, on=orderline_agg_id).\
                                     merge(grp_order_ids, on=orderline_agg_id)
-        # 7. Get list of orderline
-        # grp_orderline = df_orderlines.groupby(orderline_agg_id)\
-        #                                 [["ol_number", "ol_i_id",
-        #                                   "ol_delivery_d", "ol_amount",
-        #                                   "ol_supply_w_id", "ol_quantity",
-        #                                   "ol_dist_info"]].agg([self.to_list])\
-        #                                   .reset_index()
         self.helper_write_csv(processed_orders, filepath)
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             return ("orders", filepath)
-
 
 
     def create_customer(self):
@@ -251,10 +246,20 @@ class Data:
             return ("stock", filepath)
 
     def preprocess(self):
-        list_of_processed_files = []
-        list_of_processed_files.append(self.create_warehouse())
-        list_of_processed_files.append(self.create_district())
-        list_of_processed_files.append(self.create_order())
-        list_of_processed_files.append(self.create_customer())
-        list_of_processed_files.append(self.create_stock())
+        pool = Pool()
+        start = time.time()
+        # Run in parallel
+        res_warehouse = pool.apipe(self.create_warehouse)
+        res_district = pool.apipe(self.create_district)
+        res_order = pool.apipe(self.create_order)
+        res_customer = pool.apipe(self.create_customer)
+        res_stock = pool.apipe(self.create_stock)
+        # Consolidate result
+        pool.close()
+        pool.join()
+        list_of_processed_files = [res_warehouse.get(), res_district.get(),
+                                   res_order.get(), res_customer.get(),
+                                   res_stock.get()]
+        end = time.time()
+        self.debug("Preprocessing of csv file took {}s".format(end - start))
         return list_of_processed_files
