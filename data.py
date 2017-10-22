@@ -51,11 +51,18 @@ class Data:
 
     def helper_write_csv(self, dataframe, filename, null_value='null'):
         filepath = os.path.join(os.path.sep, conf['data-path'], filename)
-        dataframe.to_csv(filepath, na_rep="null", header=False,
+        dataframe.to_csv(filepath, na_rep="null", header=True,
                          index=False)
 
     def get_full_filepath(self, filename):
         return os.path.join(os.path.sep, conf['data-path'], filename)
+
+    def rename_as_nested(self, parent, child):
+        result = {}
+        for child_attribute in child:
+            renamed_attribute_name = "{}.{}".format(parent, child_attribute)
+            result[child_attribute] = renamed_attribute_name
+        return result
 
     def create_warehouse(self):
         filepath = self.get_full_filepath("mongo_warehouse.csv")
@@ -65,7 +72,19 @@ class Data:
                                             "w_zip", "w_ytd"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_warehouse.shape))
+        # Create key
+        processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
+        # Rename column to allow for nesting
+        new_columns = self.rename_as_nested("w_address", ["w_street_1",
+                                                          "w_street_2",
+                                                          "w_city",
+                                                          "w_state",
+                                                          "w_zip"])
+        processed_warehouse.rename(columns=new_columns, inplace=True)
         self.helper_write_csv(processed_warehouse, filepath)
+        # Return filepath if exist
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("warehouse", filepath)
 
     def create_district(self):
         filepath = self.get_full_filepath("mongo_district.csv")
@@ -80,7 +99,19 @@ class Data:
                                                  "d_next_o_id"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_district.shape))
+        # Create key
+        new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
+        processed_district.rename(columns=new_columns, inplace=True)
+        # Rename column to allow for nesting
+        new_columns = self.rename_as_nested("d_address", ["d_street_1",
+                                                          "d_street_2",
+                                                          "d_city",
+                                                          "d_state",
+                                                          "d_zip"])
         self.helper_write_csv(processed_district, filepath)
+        # Return filepath if exist
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("district", filepath)
 
     def create_order(self):
         pass
@@ -90,7 +121,24 @@ class Data:
         df_customer = self.read_original_csv("customer")
         self.debug("Processed {}: {}\n".format(filepath,
                                                df_customer.shape))
+        # Create key
+        new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
+        df_customer.rename(columns=new_columns, inplace=True)
+        # Rename column to allow for nesting
+        new_columns = self.rename_as_nested("c_name", ["c_first",
+                                                       "c_middle",
+                                                       "c_last"])
+        df_customer.rename(columns=new_columns, inplace=True)
+        new_columns = self.rename_as_nested("c_address", ["c_street_1",
+                                                          "c_street_2",
+                                                          "c_city",
+                                                          "c_state",
+                                                          "c_zip"])
+        df_customer.rename(columns=new_columns, inplace=True)
         self.helper_write_csv(df_customer, filepath)
+        # Return filepath if exist
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("customer", filepath)
 
     def create_stock(self):
         filepath = self.get_full_filepath("mongo_stock.csv")
@@ -108,11 +156,31 @@ class Data:
                                            "i_price", "i_im_id", "i_data"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_stock.shape))
+        # Create key
+        new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
+        processed_district.rename(columns=new_columns, inplace=True)
+        # Rename column to allow for nesting
+        new_columns = self.rename_as_nested("district_info", ["s_dist_01",
+                                                              "s_dist_02",
+                                                              "s_dist_03",
+                                                              "s_dist_04",
+                                                              "s_dist_05",
+                                                              "s_dist_06",
+                                                              "s_dist_07",
+                                                              "s_dist_08",
+                                                              "s_dist_09",
+                                                              "s_dist_10"])
+        processed_stock.rename(columns=new_columns, inplace=True)
         self.helper_write_csv(processed_stock, filepath)
+        # Return filepath if exist
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("stock", filepath)
 
     def preprocess(self):
-        self.create_warehouse()
-        self.create_district()
-        self.create_order()
-        self.create_customer()
-        self.create_stock()
+        list_of_processed_files = []
+        list_of_processed_files.append(self.create_warehouse())
+        list_of_processed_files.append(self.create_district())
+        # list_of_processed_files.append(self.create_order())
+        list_of_processed_files.append(self.create_customer())
+        list_of_processed_files.append(self.create_stock())
+        return list_of_processed_files
