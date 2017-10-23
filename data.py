@@ -67,10 +67,10 @@ class Data:
         return result
 
     def to_distinct_list(self, x):
-        return str(list(set(x)))
+        return str(list(set(x.values)))
 
     def to_list(self, x):
-        return str(list(x))
+        return str(x.values.tolist())
 
     def get_preprocessed_orderline(self):
         " Return orderline dataframe with item name "
@@ -153,33 +153,47 @@ class Data:
             df_orderlines['ol_quantity']]
         grp_pop_product = grp_pop_product[["w_id", "d_id", "o_id", "ol_i_id",
                                            "ol_i_name", "ol_quantity"]]
+        grp_pop_product = grp_pop_product.groupby(orderline_agg_id)
+        agg_2_start = time.time()
         # 2. Get popular item ID(s) as a list
-        grp_pop_ids = grp_pop_product.groupby(orderline_agg_id)['ol_i_id'].\
-                                      agg([self.to_list]).reset_index()
+        grp_pop_ids = grp_pop_product['ol_i_id'].agg([self.to_list])\
+                                                .reset_index()
         grp_pop_ids.rename(columns={'to_list': 'popular_item_id'},
                            inplace=True)
+        agg_2_end = time.time()
+        agg_3_start = time.time()
         # 3. Get popular item name(s) as a list
-        grp_pop_names = grp_pop_product.groupby(orderline_agg_id)['ol_i_name']\
-                                       .agg([self.to_list]).reset_index()
+        grp_pop_names = grp_pop_product['ol_i_name'].agg([self.to_list])\
+                                                    .reset_index()
         grp_pop_names.rename(columns={'to_list': 'popular_item_name'},
                              inplace=True)
+        agg_3_end = time.time()
+        agg_4_start = time.time()
         # 4. Get popular item quantity
-        grp_pop_qty = grp_pop_product.groupby(orderline_agg_id)['ol_quantity']\
-                                     .agg([max]).reset_index()
-        grp_pop_qty.rename(columns={'max': 'popular_item_qty'},
+        grp_pop_qty = grp_pop_product['ol_quantity'].nth(0).reset_index()
+        grp_pop_qty.rename(columns={'ol_quantity': 'popular_item_qty'},
                            inplace=True)
+        agg_4_end = time.time()
+        agg_5_start = time.time()
         # 5. Get list of all item IDs per order
-        grp_order_ids = grp_pop_product.groupby(orderline_agg_id)['ol_i_id'].\
+        grp_order_ids = df_orderlines.groupby(orderline_agg_id)['ol_i_id'].\
                                       agg([self.to_distinct_list]).\
                                       reset_index()
         grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
                              inplace=True)
+        agg_5_end = time.time()
         # 6. Get merged
         processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
                                     merge(grp_pop_names, on=orderline_agg_id).\
                                     merge(grp_pop_qty, on=orderline_agg_id).\
                                     merge(grp_order_ids, on=orderline_agg_id)
+        self.debug("Processed {}: {}\n".format(filepath,
+                                               processed_orders.shape))
         self.helper_write_csv(processed_orders, filepath)
+        # self.debug("Aggregate 2: {}s\n".format(agg_2_end - agg_2_start))
+        # self.debug("Aggregate 3: {}s\n".format(agg_3_end - agg_3_start))
+        # self.debug("Aggregate 4: {}s\n".format(agg_4_end - agg_4_start))
+        # self.debug("Aggregate 5: {}s\n".format(agg_5_end - agg_5_start))
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             return ("orders", filepath)
