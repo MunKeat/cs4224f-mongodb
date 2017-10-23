@@ -29,12 +29,16 @@ def create_database():
 def upload_data():
     csv_generator = Data()
     list_of_processed_files = csv_generator.preprocess()
+    mongoimport_start = time.time()
     for collection, filepath in list_of_processed_files:
         # Import processed csv file
         if conf['debug']:
             subprocess.call([mongoimport,
                             "--db", conf["database"],
                             "--collection", collection,
+                            "--writeConcern", conf["write_concern"],
+                            "--drop",
+                            "--numInsertionWorkers", conf["insert_workers"],
                             "--type", "csv",
                             "--headerline",
                             "--file", filepath])
@@ -43,9 +47,15 @@ def upload_data():
             subprocess.call([mongoimport,
                             "--db", conf["database"],
                             "--collection", collection,
+                            "--writeConcern", conf["write_concern"],
+                            "--drop",
+                            "--numInsertionWorkers", conf["insert_workers"],
                             "--type", "csv",
                             "--headerline",
                             "--file", filepath], stdout=open(os.devnull, 'wb'))
+    mongoimport_end = time.time()
+    debug("Time taken for mongoimport: {}s\n"\
+          .format(mongoimport_end - mongoimport_start))
 
 def preprocess_data():
     def convert_str_to_list(string, is_int=False):
@@ -110,7 +120,7 @@ def cleanup():
 def main():
     cleanup()
     upload_data()
-    preprocess_data()
+    # preprocess_data()
 
 
 main()
