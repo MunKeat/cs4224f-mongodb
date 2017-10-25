@@ -51,6 +51,14 @@ class Data:
         self.debug("Original {}: {}\n".format(filename, dataframe.shape))
         return dataframe
 
+    def read_processed_csv(self, table):
+        "Assume headers present in csv"
+        filename = table + ".csv"
+        filepath = os.path.join(os.path.sep, conf['data-path'], filename)
+        dataframe = pd.read_csv(filepath, na_values='null', dtype=str)
+        self.debug("Processed {}: {}\n".format(filename, dataframe.shape))
+        return dataframe
+
     def helper_write_csv(self, dataframe, filename, null_value='null'):
         filepath = os.path.join(os.path.sep, conf['data-path'], filename)
         dataframe.to_csv(filepath, na_rep="null", header=True,
@@ -258,6 +266,7 @@ class Data:
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             return ("stock", filepath)
+
 
     def preprocess(self):
         pool = Pool()
