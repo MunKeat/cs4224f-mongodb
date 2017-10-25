@@ -130,10 +130,10 @@ def preprocess_data():
                                               write_concern=write)
         result = orders_collection.bulk_write(order_update_request,
                                               ordered=False)
-        print(result.bulk_api_result)
+        debug(result.bulk_api_result)
     except BulkWriteError as error:
         debug("Preprocessing of orders collection failed\n")
-        print(error.details)
+        debug(error.details)
     bulk_write_end = time.time()
     debug("Bulk write for Orders collection: {}s\n"
           .format(bulk_write_end - bulk_write_start))
