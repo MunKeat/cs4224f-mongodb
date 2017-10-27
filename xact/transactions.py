@@ -60,7 +60,37 @@ def delivery_transaction(w_id, carrier_id, db):
 #
 ###############################################################################
 def order_status_transaction(c_w_id, c_d_id, c_id, db):
-    pass
+    result = {}
+    #1. get last order of a customer
+    orders = db.orders.find(
+        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
+        {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
+    ).sort("o_id": -1).limit(1)
+    if len(orders) == 0:
+        return result
+    #2. get the customer info from customer table
+    customers = db.customer.find(
+        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
+        {"c_name": 1, "c_balance": 1}
+    ).limit(1)
+    #3. get orderline info
+    ol_delivery_d = orders[0].o_delivery_d
+    o_items = {}
+    for each_orderline in orders[0].orderline:
+        o_items[each_orderline.ol_number] = {}
+        o_items[each_orderline.ol_number]['ol_i_id'] = each_orderline.ol_i_id
+        o_items[each_orderline.ol_number]['ol_supply_w_id'] = each_orderline.ol_supply_w_id
+        o_items[each_orderline.ol_number]['ol_quantity'] = each_orderline.ol_quantity
+        o_items[each_orderline.ol_number]['ol_delivery_d'] = ol_delivery_d
+    result['items'] = o_items
+    result['c_name'] = customers[0].c_name
+    result['c_balance'] = customers[0].c_balance
+    result['o_id'] = orders[0].o_id
+    result['o_entry_d'] = orders[0].o_entry_d
+    result['o_carrier_id'] = orders[0].o_carrier_id
+    return result
+
+
 
 ###############################################################################
 #
