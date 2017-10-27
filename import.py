@@ -9,7 +9,7 @@ from config import parameters as conf
 from data import Data
 
 
-connection = MongoClient(w=int(conf["write_concern"]))
+connection = MongoClient(w=conf["write_concern"])
 db = connection[conf["database"]]
 
 
@@ -148,7 +148,7 @@ def preprocess_data():
     bulk_write_start = time.time()
     try:
         # Access "orders" collection, with specific write concern
-        write = WriteConcern(w=int(conf["write_concern"]))
+        write = WriteConcern(w=conf["write_concern"])
         orders_collection = db.get_collection('orders',
                                               write_concern=write)
         result = orders_collection.bulk_write(order_update_request,
