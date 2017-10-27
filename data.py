@@ -82,6 +82,7 @@ class Data:
 
     def get_preprocessed_orderline(self):
         " Return orderline dataframe with item name "
+        filepath = self.get_full_filepath("mongo_orderline.csv")
         df_orderline = self.read_original_csv("order-line")
         df_item = self.read_original_csv("item")
         df_item = df_item[["i_id", "i_name"]]
@@ -98,6 +99,7 @@ class Data:
                                                      "ol_dist_info"]]
         processsed_orderline.rename(columns={'i_name': 'ol_i_name'},
                                     inplace=True)
+        self.helper_write_csv(processsed_orderline, filepath)
         return processsed_orderline
 
     def create_warehouse(self):
@@ -190,11 +192,16 @@ class Data:
         grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
                              inplace=True)
         agg_5_end = time.time()
+        # 6. Get total amount per order
+        grp_order_amt = df_orderlines.groupby(orderline_agg_id)['ol_amount'].\
+                                      agg([sum]).\
+                                      reset_index()
         # 6. Get merged
         processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
                                     merge(grp_pop_names, on=orderline_agg_id).\
                                     merge(grp_pop_qty, on=orderline_agg_id).\
-                                    merge(grp_order_ids, on=orderline_agg_id)
+                                    merge(grp_order_ids, on=orderline_agg_id).\
+                                    merge(grp_order_amt, on=orderline_agg_id)
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_orders.shape))
         self.helper_write_csv(processed_orders, filepath)

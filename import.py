@@ -90,10 +90,11 @@ def preprocess_data():
     # Create dataframe for fast processing
     proc_dataframe_start = time.time()
     proc_orders = csv_generator.read_processed_csv("mongo_orders")
-    orderlines = csv_generator.read_original_csv("order-line")
+    orderlines = csv_generator.read_processed_csv("mongo_orderline")
     proc_orderlines = orderlines.groupby(["w_id", "d_id", "o_id"])\
                                 .apply(lambda x: x[["ol_number",
                                                     "ol_i_id",
+                                                    "ol_i_name",
                                                     "ol_delivery_d",
                                                     "ol_amount",
                                                     "ol_supply_w_id",
@@ -145,10 +146,13 @@ def cleanup():
 
 
 def main():
+    main_start = time.time()
     cleanup()
     upload_data()
     create_indexes()
     preprocess_data()
+    main_end = time.time()
+    debug("Total time taken: {}s\n".format(main_end - main_start))
 
 
 main()
