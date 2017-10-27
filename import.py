@@ -128,17 +128,17 @@ def preprocess_data():
                                     on=["w_id", "d_id", "o_id"],
                                     how='left')
     # Convert string type to list object for mongodb
-    proc_orders["popular_item_id"] = proc_orders["popular_item_id"].\
+    proc_orders["popular_items"] = proc_orders["popular_items"].\
                                             map(lambda x:
                                                 convert_str_to_list(x, True))
-    proc_orders["popular_item_name"] = proc_orders["popular_item_name"].\
+    proc_orders["popular_items_name"] = proc_orders["popular_items_name"].\
                                             map(lambda x:
                                                 convert_str_to_list(x, False))
     proc_orders["ordered_items"] = proc_orders["ordered_items"].\
                                             map(lambda x:
                                                 convert_str_to_list(x, True))
     proc_orders = proc_orders[["w_id", "d_id", "o_id", "orderline_set",
-                               "popular_item_id", "popular_item_name",
+                               "popular_items", "popular_items_name",
                                "ordered_items"]]
     proc_orders["update"] = proc_orders.apply(func=get_order_updates, axis=1)
     proc_dataframe_end = time.time()
