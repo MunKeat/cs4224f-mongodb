@@ -163,8 +163,7 @@ def popular_item_transaction(i, w_id, d_id, L, db):
         popular_quantity = order.popular_item_qty
         popular_items = [{'i_name': name, 'ol_quantity': popular_quantity} for name in popular_item_name]
         output_1.append({'w_id': order.w_id, 'd_id': order.d_id, 'o_id': order.o_id,
-                         'o_entry_d': order.o_entry_d, 'c_first': order.c_first,
-                         'c_middle': order.c_middle, 'c_last': order.c_last, 'popular_items': popular_items})
+                         'o_entry_d': order.o_entry_d, 'c_name': order.c_name, 'popular_items': popular_items})
         popular_item_id.extend(order.popular_item_id)
         popular_item_name.extend(order.popular_item_name)
         order_item_id.append(order.ordered_items)
@@ -187,4 +186,18 @@ def popular_item_transaction(i, w_id, d_id, L, db):
 #
 ###############################################################################
 def top_balance_transaction(db):
-    pass
+    #1. find list of w_id
+    list_of_distinct_wid = []
+    distinct_wid = db.warehouse.find(
+        {},
+        {"w_id": 1}
+    )
+    for result in distinct_wid:
+        list_of_distinct_wid.append(result.w_id)
+    # Begin transaction
+
+    customers = db.customer.find(
+        {},
+        {"w_name":1, "d_name": 1, "c_name":1, "c_balance":1}
+    ).sort("c_balance": -1).limit(10)
+    return output(customers)
