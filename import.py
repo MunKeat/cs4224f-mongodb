@@ -57,9 +57,22 @@ def upload_data():
 
 def create_indexes():
     index_start = time.time()
+    # Index: Warehouse
+    db.warehouse.create_index([("w_id", pymongo.ASCENDING)], unique=True)
+    # Index:District
+    db.district.create_index([("w_id", pymongo.ASCENDING),
+                              ("d_id", pymongo.ASCENDING)], unique=True)
+    # Index: Orders
     db.orders.create_index([("w_id", pymongo.ASCENDING),
                             ("d_id", pymongo.ASCENDING),
                             ("o_id", pymongo.ASCENDING)], unique=True)
+    # Index: Stock
+    db.stock.create_index([("w_id", pymongo.ASCENDING),
+                           ("i_id", pymongo.ASCENDING)], unique=True)
+    # Index: Customer
+    db.customer.create_index([("w_id", pymongo.ASCENDING),
+                              ("d_id", pymongo.ASCENDING),
+                              ("c_id", pymongo.ASCENDING)], unique=True)
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
 
@@ -90,11 +103,11 @@ def preprocess_data():
     # Create dataframe for fast processing
     proc_dataframe_start = time.time()
     proc_orders = csv_generator.read_processed_csv("mongo_orders")
-    orderlines = csv_generator.read_original_csv("order-line")
+    orderlines = csv_generator.read_processed_csv("mongo_orderline")
     proc_orderlines = orderlines.groupby(["w_id", "d_id", "o_id"])\
                                 .apply(lambda x: x[["ol_number",
                                                     "ol_i_id",
-                                                    "ol_delivery_d",
+                                                    "ol_i_name",
                                                     "ol_amount",
                                                     "ol_supply_w_id",
                                                     "ol_quantity",
@@ -145,10 +158,13 @@ def cleanup():
 
 
 def main():
+    main_start = time.time()
     cleanup()
     upload_data()
     create_indexes()
     preprocess_data()
+    main_end = time.time()
+    debug("Total time taken: {}s\n".format(main_end - main_start))
 
 
 main()

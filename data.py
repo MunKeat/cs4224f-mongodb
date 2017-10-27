@@ -82,6 +82,7 @@ class Data:
 
     def get_preprocessed_orderline(self):
         " Return orderline dataframe with item name "
+        filepath = self.get_full_filepath("mongo_orderline.csv")
         df_orderline = self.read_original_csv("order-line")
         df_item = self.read_original_csv("item")
         df_item = df_item[["i_id", "i_name"]]
@@ -98,6 +99,7 @@ class Data:
                                                      "ol_dist_info"]]
         processsed_orderline.rename(columns={'i_name': 'ol_i_name'},
                                     inplace=True)
+        self.helper_write_csv(processsed_orderline, filepath)
         return processsed_orderline
 
     def create_warehouse(self):
@@ -109,7 +111,7 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_warehouse.shape))
         # Create key
-        processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
+        # processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("w_address", ["w_street_1",
                                                           "w_street_2",
@@ -136,14 +138,15 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_district.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
-        processed_district.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
+        # processed_district.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("d_address", ["d_street_1",
                                                           "d_street_2",
                                                           "d_city",
                                                           "d_state",
                                                           "d_zip"])
+        processed_district.rename(columns=new_columns, inplace=True)
         self.helper_write_csv(processed_district, filepath)
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
@@ -190,11 +193,16 @@ class Data:
         grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
                              inplace=True)
         agg_5_end = time.time()
+        # 6. Get total amount per order
+        grp_order_amt = df_orderlines.groupby(orderline_agg_id)['ol_amount'].\
+                                      agg([sum]).\
+                                      reset_index()
         # 6. Get merged
         processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
                                     merge(grp_pop_names, on=orderline_agg_id).\
                                     merge(grp_pop_qty, on=orderline_agg_id).\
-                                    merge(grp_order_ids, on=orderline_agg_id)
+                                    merge(grp_order_ids, on=orderline_agg_id).\
+                                    merge(grp_order_amt, on=orderline_agg_id)
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_orders.shape))
         self.helper_write_csv(processed_orders, filepath)
@@ -213,8 +221,8 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                df_customer.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
-        df_customer.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
+        # df_customer.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("c_name", ["c_first",
                                                        "c_middle",
@@ -248,8 +256,8 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_stock.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
-        processed_stock.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
+        # processed_stock.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("district_info", ["s_dist_01",
                                                               "s_dist_02",
