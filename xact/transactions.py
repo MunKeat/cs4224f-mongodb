@@ -1,6 +1,10 @@
-
 import pymongo
+from pymongo import MongoClient
 from datetime import datetime
+from config import parameters as conf
+
+connection = MongoClient(w=int(conf["write_concern"]))
+db = connection[conf["database"]]
 
 ###############################################################################
 #
@@ -11,7 +15,7 @@ import pprint
 
 def output(dictionary):
     #TODO: change output form
-    output_form = "RAW_PRINT"
+    output_form = "PRETTY_PRINT"
     if output_form == "RAW_PRINT":
         print(dictionary)
         return None
@@ -22,6 +26,15 @@ def output(dictionary):
         return
     elif output_form == "NONE":
         return dictionary
+
+def flatten(array):
+    # Equivalent to:
+    #
+    # for sublist in array:
+    # for item in sublist:
+    #     flat_list.append(item)
+    flat_list = [item for sublist in array for item in sublist]
+    return flat_list
 
 ###############################################################################
 #
@@ -318,39 +331,62 @@ def stock_level_transaction(w_id, d_id,T, L, db):
 # TRANSACTION 6
 #
 ###############################################################################
-def popular_item_transaction(i, w_id, d_id, L, db):
-    #1. get all the L orders for the district from order table
-    orders = db.orders.find(
-        {"w_id": w_id, "d_id": d_id},
-        {"o_id":1, "popular_items": 1, "popular_items_name": 1, "popular_item_qty": 1, "ordered_items": 1}
-    ).sort("o_id": -1).limit(L)
-
-    output_1 = []
-    output_2 = []
+def popular_item_transaction(i, w_id, d_id, L, session=db):
+    main_output = {"w_id": w_id, "d_id": d_id, "L": L}
+    # Begin query
+    results = db.orders.find({"w_id": w_id, "d_id": d_id},
+                             {"c_name": 1,
+                              "o_id": 1,
+                              "o_entry_d": 1,
+                              "popular_items": 1,
+                              "popular_items_name": 1,
+                              "popular_item_qty": 1,
+                              "ordered_items": 1})\
+                      .sort([("o_id", -1)])\
+                      .limit(L)
     number_of_orders = 0
-    popular_item_id = []
-    popular_item_name = []
-    order_item_id = []
-    for order in orders:
+    orders = []
+    # Following lists will be used to calculate part II
+    orders_i_id = []
+    popular_i_id = []
+    popular_i_name = []
+    for result in results:
         number_of_orders += 1
-        popular_quantity = order.popular_item_qty
-        popular_items = [{'i_name': name, 'ol_quantity': popular_quantity} for name in popular_item_name]
-        output_1.append({'w_id': order.w_id, 'd_id': order.d_id, 'o_id': order.o_id,
-                         'o_entry_d': order.o_entry_d, 'c_name': order.c_name, 'popular_items': popular_items})
-        popular_item_id.extend(order.popular_item_id)
-        popular_item_name.extend(order.popular_item_name)
-        order_item_id.append(order.ordered_items)
-
-    # Get distinct popular items
-    distinct_popular_item = list(set([tuple([id, name]) for id, name in zip(popular_item_id, popular_item_name)]))
+        # Part I: For each order
+        order = {
+            "o_id": result["o_id"],
+            "o_entry_d": result["o_entry_d"],
+            "c_name": result["c_name"],
+            "popular_item": {
+                "i_name": result["popular_items_name"],
+                "ol_quantity": result["popular_item_qty"]
+            }
+        }
+        orders.append(order)
+        # Part II: Popular item
+        orders_i_id.append(result["ordered_items"])
+        popular_i_id.append(result["popular_items"])
+        popular_i_name.append(result["popular_items_name"])
+    # Get the popular item percentage count
+    popular_percentage = []
+    # Create distinct popular id with their name
+    popular_i_id = flatten(popular_i_id)
+    popular_i_name = flatten(popular_i_name)
+    popular_items = list(zip(popular_i_id, popular_i_name))
+    distinct_popular_item = list(set(popular_items))
     # Perform percentage count
     raw_count = [[(item_id in single_ordered_items)
-                  for single_ordered_items in order_item_id].count(True)
+                  for single_ordered_items in orders_i_id].count(True)
                  for item_id, item_name in distinct_popular_item]
-    output_2 = [{"i_name": item[1], "percentage": float(item_count) / number_of_orders} for item, item_count in
-                zip(distinct_popular_item, raw_count)]
-    return (output(output_1), output(output_2))
-
+    popular_percentage = [{"i_name": item[1],
+                           "percentage": float(item_count) / number_of_orders}
+                          for item, item_count in
+                          zip(distinct_popular_item, raw_count)]
+    # Append result to main_output
+    main_output["orders"] = orders
+    main_output["popular_percentage"] = popular_percentage
+    print("Here:", popular_i_name)
+    return(output(main_output))
 
 
 ###############################################################################
@@ -358,14 +394,14 @@ def popular_item_transaction(i, w_id, d_id, L, db):
 # TRANSACTION 7
 #
 ###############################################################################
-def top_balance_transaction(db):
+def top_balance_transaction(session=db, query_limit=10):
     customer_list = []
     results = session.customer.find({},
                                     {"c_name": 1,
                                      "c_balance": 1,
                                      "w_name": 1,
                                      "d_name": 1})\
-                              .sort({"c_balance": -1})\
+                              .sort([("c_balance", -1)])\
                               .limit(query_limit)
     for result in results:
         customer_list.append(result)
