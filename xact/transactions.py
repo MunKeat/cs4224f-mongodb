@@ -328,7 +328,7 @@ def stock_level_transaction(w_id, d_id, T, L, session=db):
 ###############################################################################
 def popular_item_transaction(i, w_id, d_id, L, session=db):
     main_output = {"w_id": w_id, "d_id": d_id, "L": L}
-    # Begin query
+    # 1. Select last L orders of a district from the order table
     results = db.orders.find({"w_id": w_id, "d_id": d_id},
                              {"c_name": 1,
                               "o_id": 1,
@@ -347,7 +347,7 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
     popular_i_name = []
     for result in results:
         number_of_orders += 1
-        # Part I: For each order
+        # 2. Obtain last L order's information
         order = {
             "o_id": result["o_id"],
             "o_entry_d": result["o_entry_d"],
@@ -358,18 +358,18 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
             }
         }
         orders.append(order)
-        # Part II: Popular item
+        # 3. Get popular items raw data
         orders_i_id.append(result["ordered_items"])
         popular_i_id.append(result["popular_items"])
         popular_i_name.append(result["popular_items_name"])
-    # Get the popular item percentage count
+    # 3a. Get the popular item percentage count
     popular_percentage = []
-    # Create distinct popular id with their name
+    # 3b. Create distinct popular id with their name
     popular_i_id = flatten(popular_i_id)
     popular_i_name = flatten(popular_i_name)
     popular_items = list(zip(popular_i_id, popular_i_name))
     distinct_popular_item = list(set(popular_items))
-    # Perform percentage count
+    # 3c. Perform percentage count
     raw_count = [[(item_id in single_ordered_items)
                   for single_ordered_items in orders_i_id].count(True)
                  for item_id, item_name in distinct_popular_item]
