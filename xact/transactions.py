@@ -31,7 +31,138 @@ def output(dictionary):
 #
 ###############################################################################
 def new_order_transaction(c_id, w_id, d_id, M, items, db):
-    pass
+    districts = db.district
+    customers = db.customer
+    stocks = db.stock
+    orders = db.order
+
+    # Retrieve tax rate and order id from district
+    district = districts.find_one({"w_id": w_id, "d_id", d_id})
+    district_id = district._id
+    o_id = district.d_next_o_id
+    w_tax = district.w_id
+    d_tax = district.d_id
+
+    # Retrieve customer info
+    customer = customers.find_one({"w_id": w_id, "d_id", d_id, "c_id": c_id}, fields = {'_id':False})
+    c_name = customer.c_name
+    c_last = c_name.c_last
+    c_credit = customer.c_credit
+    c_discount = customer.c_discount
+
+    # Prepare the new order 
+    o_entry_d = datetime.utcnow()
+    order = {
+        "w_id": w_id,
+        "d_id": d_id,
+        "o_id": o_id,
+        "c_id": c_id,
+        "o_entry_d": o_entry_d,
+        "o_ol_cnt": M,
+        "c_name": c_name
+    }
+    orderlines = []
+    total_amount = 0.0
+    ordered_items_id = []
+    ordered_items = {}
+    popular_items = []
+    popular_item_quantity = 0
+    popular_items_name = []
+    is_all_local = True
+
+    if (d_id == 10):
+        s_dist_col_name = 's_dist_info_' + str(d_id)
+    elif (d_id < 10):
+        s_dist_col_name = 's_dist_info_0' + str(d_id)
+    # Prepare an orderline for each item
+    for ol_number in (0, M):
+        item = items[ol_number]
+        ol_i_id = item[0]
+        ol_supply_w_id = item[1]
+        ol_quantity = item[2]
+        # Retrieve stock and item information
+        stock = stocks.find_one({"w_id": ol_supply_w_id, "i_id": ol_i_id})
+        s_quantity = stock.s_quantity
+        i_name = stock.i_name
+        i_price = stock.i_price
+        district_id = "%02d" % d_id
+        ol_dist_info = stock['s_dist_' + district_id]
+        ol_amount = ol_quantity * i_price
+        # Update stock
+        adjusted_qty = s_quantity - ol_quantity
+        adjusted_qty = adjusted_qty + 100 if adjusted_qty < 10 else adjusted_qty
+        is_remote = 1 if ol_supply_w_id != w_id else 0
+        is_all_local = False if is_remote == 1
+        stock.update_one(
+            {"w_id": ol_supply_w_id, "i_id": ol_i_id},
+            {
+                "$inc": {"s_ytd": ol_quantity, "s_order_cnt": 1, "s_remote_cnt": is_remote},
+                "$set": {"s_quantity": adjusted_qty}
+            }
+        )
+        s_quantity = adjusted_qty
+        # Update popular item and ordered_items
+        if (ol_quantity > popular_item_qty):
+            popular_item_qty = ol_quantity
+            popular_item_id = [ol_i_id]
+            popular_item_name = [i_name]
+        elif (ol_quantity == popular_item_qty):
+            popular_item_id.append(ol_i_id)
+            popular_item_name.append(i_name)
+        
+        ordered_items_id.append(ol_i_id)
+        ordered_item_info = {
+            'item_number': ol_i_id, 
+            'i_name': i_name, 
+            'supplier_warehouse': ol_supply_w_id,
+            'quantity': ol_quantity,
+            'ol_amount': ol_amount,
+            's_quantity': s_quantity
+        }
+        ordered_items.append(ordered_item_info)
+
+        # Add new order line
+        orderline = {
+            "ol_number": ol_number,
+            "ol_i_id": ol_i_id,
+            "ol_amount": ol_amount,
+            "ol_supply_w_id": ol_supply_w_id,
+            "ol_quantity": ol_quantity,
+            "ol_dist_info": ol_dist_info
+        }
+        orderlines.append(orderline)
+        total_amount += ol_amount
+    
+    # Update order information
+    final_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
+    order["o_total_amount"] = final_amount
+    order["orderline"] = orderlines
+    order["popular_items"] = popular_item_id
+    order["popular_items_name"] = popular_item_name
+    order["ordered_items"] = ordered_items
+    order["popular_item_qty"] = popular_item_quantity
+    order["o_all_local"] = is_all_local
+
+    # Insert order
+    orders.insert_one(order)
+    
+    # Process output
+    result = {
+        'w_id': w_id,
+        'd_id': d_id,
+        'c_id': c_id,
+        'c_last': c_last,
+        'c_credit': c_credit,
+        'c_discount': c_discount,
+        'w_tax': w_tax,
+        'd_tax': d_tax,
+        'o_id': o_id,
+        'o_entry_d': o_entry_d,
+        'num_items': M,
+        'total_amount': final_amount,
+        'ordered_item': ordered_items
+    }
+    return result
 
 ###############################################################################
 #
