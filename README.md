@@ -64,7 +64,7 @@ $ unzip cs4224f-mongodb-master.zip
 
 ```
 $ # Ensure that you are at the root of the project repository
-$ cd ~/cs4224f-mongodb-master.zip
+$ cd ~/cs4224f-mongodb-master
 $ <virtualenv> env
 $ # The following is an example
 $ # /home/stuproj/cs4224f/virtualenv-1.9/virtualenv.py env
