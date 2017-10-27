@@ -103,7 +103,11 @@ def preprocess_data():
     # Create dataframe for fast processing
     proc_dataframe_start = time.time()
     proc_orders = csv_generator.read_processed_csv("mongo_orders")
-    orderlines = csv_generator.read_processed_csv("mongo_orderline")
+    orderlines = csv_generator.read_processed_csv("mongo_orderline", False)
+    # Convert all to string type, as proc_orders's field is str type
+    for id in ["w_id", "d_id", "o_id"]:
+        orderlines[id] = orderlines[id].astype('str')
+    # Get the list of documents for each order's orderline
     proc_orderlines = orderlines.groupby(["w_id", "d_id", "o_id"])\
                                 .apply(lambda x: x[["ol_number",
                                                     "ol_i_id",
@@ -114,10 +118,12 @@ def preprocess_data():
                                                     "ol_dist_info"]].
                                        to_dict(orient='records'))\
                                 .reset_index()
+    # Rename columns
     proc_orderlines.columns = ["w_id", "d_id", "o_id", "orderline_set"]
     proc_orders = proc_orders.merge(proc_orderlines,
                                     on=["w_id", "d_id", "o_id"],
                                     how='left')
+    # Convert string type to list object for mongodb
     proc_orders["popular_item_id"] = proc_orders["popular_item_id"].\
                                             map(lambda x:
                                                 convert_str_to_list(x, True))

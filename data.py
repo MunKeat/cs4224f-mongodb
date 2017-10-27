@@ -11,7 +11,7 @@ class Data:
         if conf['debug']:
             print(message)
 
-    def read_original_csv(self, table):
+    def read_original_csv(self, table, default_string=True):
         columns = {
             # Warehouse
             'warehouse': ["w_id", "w_name", "w_street_1", "w_street_2",
@@ -45,24 +45,29 @@ class Data:
         }[table]
         filename = table + ".csv"
         filepath = os.path.join(os.path.sep, conf['data-path'], filename)
-        dataframe = pd.read_csv(filepath, na_values='null',
-                                header=None, dtype=str)
+        if default_string:
+            dataframe = pd.read_csv(filepath, na_values='null',
+                                    header=None, dtype=str)
+        else:
+            dataframe = pd.read_csv(filepath, na_values='null', header=None)
         dataframe.columns = columns
         self.debug("Original {}: {}\n".format(filename, dataframe.shape))
         return dataframe
 
-    def read_processed_csv(self, table):
+    def read_processed_csv(self, table, default_string=True):
         "Assume headers present in csv"
         filename = table + ".csv"
         filepath = os.path.join(os.path.sep, conf['data-path'], filename)
-        dataframe = pd.read_csv(filepath, na_values='null', dtype=str)
+        if default_string:
+            dataframe = pd.read_csv(filepath, na_values='null', dtype=str)
+        else:
+            dataframe = pd.read_csv(filepath, na_values='null')
         self.debug("Processed {}: {}\n".format(filename, dataframe.shape))
         return dataframe
 
-    def helper_write_csv(self, dataframe, filename, null_value='null'):
+    def helper_write_csv(self, dataframe, filename):
         filepath = os.path.join(os.path.sep, conf['data-path'], filename)
-        dataframe.to_csv(filepath, na_rep="null", header=True,
-                         index=False)
+        dataframe.to_csv(filepath, header=True, index=False)
 
     def get_full_filepath(self, filename):
         return os.path.join(os.path.sep, conf['data-path'], filename)
@@ -80,11 +85,11 @@ class Data:
     def to_list(self, x):
         return str(x.values.tolist())
 
-    def get_preprocessed_orderline(self):
+    def get_preprocessed_orderline(self, default_string=True):
         " Return orderline dataframe with item name "
         filepath = self.get_full_filepath("mongo_orderline.csv")
-        df_orderline = self.read_original_csv("order-line")
-        df_item = self.read_original_csv("item")
+        df_orderline = self.read_original_csv("order-line", default_string)
+        df_item = self.read_original_csv("item", default_string)
         df_item = df_item[["i_id", "i_name"]]
         processsed_orderline = pd.merge(df_orderline, df_item,
                                         left_on=["ol_i_id"], right_on=["i_id"],
@@ -154,8 +159,19 @@ class Data:
 
     def create_order(self):
         filepath = self.get_full_filepath("mongo_orders.csv")
+        df_customer = self.read_original_csv("customer")
         df_orders = self.read_original_csv("order")
-        df_orderlines = self.get_preprocessed_orderline()
+        df_orderlines = self.get_preprocessed_orderline(False)
+        # Select relevant field for customer
+        df_customer = df_customer[["w_id", "d_id", "c_id",
+                                   "c_first", "c_middle", "c_last"]]
+        new_columns = self.rename_as_nested("c_name", ["c_first", "c_middle",
+                                                       "c_last"])
+        df_customer.rename(columns=new_columns, inplace=True)
+        customer_id = ["w_id", "d_id", "c_id"]
+        # Convert all to string type, as df_orders's field is str type
+        for id in ["w_id", "d_id", "o_id"]:
+            df_orderlines[id] = df_orderlines[id].astype('str')
         # Get popular items
         orderline_agg_id = ['w_id', 'd_id', 'o_id']
         # 1. Get orderline(s) with maximum quantity per order
@@ -185,24 +201,30 @@ class Data:
         grp_pop_qty.rename(columns={'ol_quantity': 'popular_item_qty'},
                            inplace=True)
         agg_4_end = time.time()
+        # End of 4
+        grp_orderlines = df_orderlines.groupby(orderline_agg_id)
         agg_5_start = time.time()
         # 5. Get list of all item IDs per order
-        grp_order_ids = df_orderlines.groupby(orderline_agg_id)['ol_i_id'].\
-                                      agg([self.to_distinct_list]).\
-                                      reset_index()
+        grp_order_ids = grp_orderlines['ol_i_id'].agg([self.to_distinct_list])\
+                                                 .reset_index()
         grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
                              inplace=True)
         agg_5_end = time.time()
         # 6. Get total amount per order
-        grp_order_amt = df_orderlines.groupby(orderline_agg_id)['ol_amount'].\
-                                      agg([sum]).\
-                                      reset_index()
-        # 6. Get merged
-        processed_orders = df_orders.merge(grp_pop_ids, on=orderline_agg_id).\
-                                    merge(grp_pop_names, on=orderline_agg_id).\
-                                    merge(grp_pop_qty, on=orderline_agg_id).\
-                                    merge(grp_order_ids, on=orderline_agg_id).\
-                                    merge(grp_order_amt, on=orderline_agg_id)
+        grp_order_amt = grp_orderlines['ol_amount'].agg([sum]).reset_index()
+        # 7. Get o_delivery_d
+        grp_pop_deliver = grp_orderlines['ol_delivery_d'].nth(0).reset_index()
+        grp_pop_deliver.rename(columns={'ol_delivery_d': 'o_delivery_d'},
+                               inplace=True)
+        # 8. Get merged
+        processed_orders = df_orders.merge(df_customer, on=customer_id)\
+                                    .merge(grp_pop_ids, on=orderline_agg_id)\
+                                    .merge(grp_pop_names, on=orderline_agg_id)\
+                                    .merge(grp_pop_qty, on=orderline_agg_id)\
+                                    .merge(grp_order_ids, on=orderline_agg_id)\
+                                    .merge(grp_order_amt, on=orderline_agg_id)\
+                                    .merge(grp_pop_deliver,
+                                           on=orderline_agg_id)
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_orders.shape))
         self.helper_write_csv(processed_orders, filepath)
@@ -218,6 +240,16 @@ class Data:
     def create_customer(self):
         filepath = self.get_full_filepath("mongo_customer.csv")
         df_customer = self.read_original_csv("customer")
+        df_warehouse = self.read_original_csv("warehouse")
+        df_warehouse = df_warehouse[["w_id", "w_name"]]
+        df_district = self.read_original_csv("district")
+        df_district = df_district[["w_id", "d_id", "d_name"]]
+        # Join to extract
+
+        df_customer = df_customer.merge(df_warehouse,
+                                        on="w_id", how='left')
+        df_customer = df_customer.merge(df_district,
+                                        on=["w_id", "d_id"], how='left')
         self.debug("Processed {}: {}\n".format(filepath,
                                                df_customer.shape))
         # Create key
