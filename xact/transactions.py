@@ -193,7 +193,7 @@ def delivery_transaction(w_id, carrier_id, db):
 
         #2. update the order entry
         timestamp = datetime.utcnow()
-        db.order.updateOne(
+        db.order.update_one(
             {"w_id": w_id, "d_id": d_id, "o_id": o_id},
             { "$set": {"o_carrier_id": carrier_id, "o_delivery_d": timestamp}}
         )
