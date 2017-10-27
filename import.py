@@ -73,6 +73,10 @@ def create_indexes():
     db.customer.create_index([("w_id", pymongo.ASCENDING),
                               ("d_id", pymongo.ASCENDING),
                               ("c_id", pymongo.ASCENDING)], unique=True)
+    # Index: c_balance
+    db.customer.create_index([("c_balance", pymongo.DESCENDING)])
+    # Index: o_id
+
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
 
@@ -91,8 +95,8 @@ def preprocess_data():
         index = {"w_id": int(order.w_id), "d_id": int(order.d_id),
                  "o_id": int(order.o_id)}
         update_elements = {"orderline": order.orderline_set,
-                           "popular_item_id": order.popular_item_id,
-                           "popular_item_name": order.popular_item_name,
+                           "popular_items": order.popular_items,
+                           "popular_items_name": order.popular_item_name,
                            "ordered_items": order.ordered_items}
         update = UpdateOne(index, {"$set": update_elements})
         return update
