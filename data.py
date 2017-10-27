@@ -185,7 +185,7 @@ class Data:
         # 2. Get popular item ID(s) as a list
         grp_pop_ids = grp_pop_product['ol_i_id'].agg([self.to_list])\
                                                 .reset_index()
-        grp_pop_ids.rename(columns={'to_list': 'popular_item_id'},
+        grp_pop_ids.rename(columns={'to_list': 'popular_items'},
                            inplace=True)
         agg_2_end = time.time()
         agg_3_start = time.time()
