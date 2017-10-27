@@ -78,13 +78,13 @@ $ source ./env/bin/activate
 (env) $ pip install -r requirements.txt
 ```
 
-3. Download the dataset if you have not, and move them to `/data` folder. Thereafter, move all transaction files to the `/xact-files/` folder.
+3. Download the dataset if you have not, and move them to `/data` folder. Thereafter, move all transaction files to the `/xact/` folder.
 
 ```
 (env) $ wget http://www.comp.nus.edu.sg/~cs4224/4224-project-files.zip
 (env) $ unzip 4224-project-files.zip
 (env) $ mv ./4224-project-files/data-files/*.csv ./data
-(env) $ mv ./4224-project-files/xact-files/* ./xact-files/
+(env) $ mv ./4224-project-files/xact-files/* ./xact/
 ```
 
 4. Set up the configuration file. `config.conf`.
