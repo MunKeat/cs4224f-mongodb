@@ -380,7 +380,6 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
     # Append result to main_output
     main_output["orders"] = orders
     main_output["popular_percentage"] = popular_percentage
-    print("Here:", popular_i_name)
     return(output(main_output))
 
 
