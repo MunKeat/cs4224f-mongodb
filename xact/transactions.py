@@ -161,7 +161,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
         'total_amount': final_amount,
         'ordered_item': ordered_items
     }
-    return result
+    return output(result)
 
 ###############################################################################
 #
@@ -212,8 +212,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
     )
     result.update(district)
 
-    return result
-
+    return output(result)
 
 
 ###############################################################################
