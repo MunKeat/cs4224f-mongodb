@@ -4,6 +4,27 @@ from datetime import datetime
 
 ###############################################################################
 #
+# Utility Function(s)
+#
+###############################################################################
+import pprint
+
+def output(dictionary):
+    #TODO: change output form
+    output_form = "RAW_PRINT"
+    if output_form == "RAW_PRINT":
+        print(dictionary)
+        return None
+    elif output_form == "PRETTY_PRINT":
+        pprint.pprint(dictionary)
+        return None
+    elif output_form == "SILENT":
+        return
+    elif output_form == "NONE":
+        return dictionary
+
+###############################################################################
+#
 # TRANSACTION 1
 #
 # Comment: Assume items is a list of items in the order
@@ -88,7 +109,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, db):
     result['o_id'] = orders[0].o_id
     result['o_entry_d'] = orders[0].o_entry_d
     result['o_carrier_id'] = orders[0].o_carrier_id
-    return result
+    return output(result)
 
 
 
@@ -116,7 +137,7 @@ def stock_level_transaction(w_id, d_id,T, L, db):
     )
     result = {}
     result['number in S'] = len(stocks)
-    return result
+    return output(result)
 
 
 ###############################################################################
@@ -125,7 +146,39 @@ def stock_level_transaction(w_id, d_id,T, L, db):
 #
 ###############################################################################
 def popular_item_transaction(i, w_id, d_id, L, db):
-    pass
+    #1. get all the L orders for the district from order table
+    orders = db.order.find(
+        {"w_id": w_id, "d_id": d_id},
+        {"o_id":1, "popular_items": 1, "popular_items_name": 1, "popular_item_qty": 1, "ordered_items": 1}
+    ).sort("o_id": -1).limit(L)
+
+    output_1 = []
+    output_2 = []
+    number_of_orders = 0
+    popular_item_id = []
+    popular_item_name = []
+    order_item_id = []
+    for order in orders:
+        number_of_orders += 1
+        popular_quantity = order.popular_item_qty
+        popular_items = [{'i_name': name, 'ol_quantity': popular_quantity} for name in popular_item_name]
+        output_1.append({'w_id': order.w_id, 'd_id': order.d_id, 'o_id': order.o_id,
+                         'o_entry_d': order.o_entry_d, 'c_first': order.c_first,
+                         'c_middle': order.c_middle, 'c_last': order.c_last, 'popular_items': popular_items})
+        popular_item_id.extend(order.popular_item_id)
+        popular_item_name.extend(order.popular_item_name)
+        order_item_id.append(order.ordered_items)
+
+    # Get distinct popular items
+    distinct_popular_item = list(set([tuple([id, name]) for id, name in zip(popular_item_id, popular_item_name)]))
+    # Perform percentage count
+    raw_count = [[(item_id in single_ordered_items)
+                  for single_ordered_items in order_item_id].count(True)
+                 for item_id, item_name in distinct_popular_item]
+    output_2 = [{"i_name": item[1], "percentage": float(item_count) / number_of_orders} for item, item_count in
+                zip(distinct_popular_item, raw_count)]
+    return (output(output_1), output(output_2))
+
 
 
 ###############################################################################
