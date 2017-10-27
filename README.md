@@ -50,21 +50,21 @@ $ # mongoimport: /usr/bin/mongoimport /temp/cs4224f/mongodb/bin/mongoimport
 
 ### Setup
 
-0. Download and unzip the project repository - we assume that the project repository zip file downloaded is `cs4224f-cassandra-master.zip`, however, this might change in the future.
+0. Download and unzip the project repository - we assume that the project repository zip file downloaded is `cs4224f-mongodb-master.zip`, however, this might change in the future.
 
 ```
 $ # Assume that the project directory is placed in the home directory
 $ cd ~
-$ # Assume the project folder is called cs4224f-cassandra-master.zip
+$ # Assume the project folder is called cs4224f-mongodb-master.zip
 $ # However, this assumption may not hold in future release - hence make changes accordingly
-$ unzip cs4224f-cassandra-master.zip
+$ unzip cs4224f-mongodb-master.zip
 ```
 
 1. Create an environment directory, `env`. We assume that you have set up virtualenv using the above - hence replace the variable \<virtualenv\> with the full path of the file, `virtualenv.py`. Otherwise, you may simply replace \<virtualenv\> with `virtualenv`.
 
 ```
 $ # Ensure that you are at the root of the project repository
-$ cd ~/cs4224f-cassandra-master.zip
+$ cd ~/cs4224f-mongodb-master.zip
 $ <virtualenv> env
 $ # The following is an example
 $ # /home/stuproj/cs4224f/virtualenv-1.9/virtualenv.py env
