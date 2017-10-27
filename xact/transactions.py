@@ -260,7 +260,6 @@ def delivery_transaction(w_id, carrier_id, db):
         )
 
 
-
 ###############################################################################
 #
 # TRANSACTION 4
@@ -298,31 +297,27 @@ def order_status_transaction(c_w_id, c_d_id, c_id, db):
     return output(result)
 
 
-
 ###############################################################################
 #
 # TRANSACTION 5
 #
-# Comment: WIP
-#
 ###############################################################################
-def stock_level_transaction(w_id, d_id,T, L, db):
-    #1. select last L orders of a district from the order table
-    orders = db.orders.find(
+def stock_level_transaction(w_id, d_id, T, L, session=db):
+    # 1. Select last L orders of a district from the order table
+    orders = session.orders.find(
         {"w_id": w_id, "d_id": d_id},
-        {"o_id": 1, "ordered_items": 1}
-    ).sort("o_id": -1).limit(L)
-    #2. find the set of items in all the orderlines
+        {"ordered_items": 1}
+    ).sort([("o_id", -1)]).limit(L)
+    # 2. Find the set of items in all the orderlines
     all_item_id = set()
     for order in orders:
-        all_item_id = all_item_id | order.ordered_items
-    #3. look up warehouse table to check for stock level of each item in the set
-    stocks = db.stock.find(
-        {"w_id": w_id, "i_id": {"$in": all_item_id}, "s_quantity": {"$lt": T}},
-        {"w_id": 1, "i_id": 1, "i_name": 1}
-    )
-    result = {}
-    result['number in S'] = len(stocks)
+        all_item_id = all_item_id | set(list(order["ordered_items"]))
+    # 3. Look up warehouse table to check for stock level of
+    #    each item in the set
+    stocks_below_threshold = session.stock.find(
+        {"w_id": w_id, "i_id": {"$in": all_item_id}, "s_quantity": {"$lt": T}}
+    ).count()
+    result = {'number in S': stocks_below_threshold}
     return output(result)
 
 
