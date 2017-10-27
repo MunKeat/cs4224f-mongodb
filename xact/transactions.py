@@ -43,11 +43,11 @@ def flatten(array):
 # Comment: Assume items is a list of items in the order
 #
 ###############################################################################
-def new_order_transaction(c_id, w_id, d_id, M, items, db):
-    districts = db.district
-    customers = db.customer
-    stocks = db.stock
-    orders = db.orders
+def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
+    districts = session.district
+    customers = session.customer
+    stocks = session.stock
+    orders = session.orders
 
     # Retrieve tax rate and order id from district
     district = districts.find_one({"w_id": w_id, "d_id", d_id})
@@ -181,10 +181,10 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
 # TRANSACTION 2
 #
 ###############################################################################
-def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
-    customers = db.customer
-    districts = db.district
-    warehouses = db.warehouse
+def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
+    customers = session.customer
+    districts = session.district
+    warehouses = session.warehouse
     # Update Warehouse, District, Customer
     warehouses.update_one({"w_id": c_w_id}, {"$inc": {"w_ytd": payment}})
     districts.update_one({"w_id": c_w_id, "d_id": c_d_id}, {"$inc": {"d_ytd": payment}})
@@ -233,10 +233,10 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
 # TRANSACTION 3
 #
 ###############################################################################
-def delivery_transaction(w_id, carrier_id, db):
+def delivery_transaction(w_id, carrier_id, session=db):
     for d_id in range(1, 11):
         #1. retrieve the smallest undelivered order
-        orders = db.orders.find(
+        orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"o_id": 1, "ol_amount": 1, "c_id": 1}
         ).sort("o_id": 1).limit(1)
@@ -248,13 +248,13 @@ def delivery_transaction(w_id, carrier_id, db):
 
         #2. update the order entry
         timestamp = datetime.utcnow()
-        db.order.update_one(
+        session.order.update_one(
             {"w_id": w_id, "d_id": d_id, "o_id": o_id},
             { "$set": {"o_carrier_id": carrier_id, "o_delivery_d": timestamp}}
         )
 
         #3. update customer table
-        db.customer.update(
+        session.customer.update(
             {"w_id": w_id, "d_id": d_id,"c_id": c_id},
             { "$inc": {"c_delivery_cnt": 1, "c_balance": o_total_amt}}
         )
@@ -265,17 +265,17 @@ def delivery_transaction(w_id, carrier_id, db):
 # TRANSACTION 4
 #
 ###############################################################################
-def order_status_transaction(c_w_id, c_d_id, c_id, db):
+def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     result = {}
     #1. get last order of a customer
-    orders = db.orders.find(
+    orders = session.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
     ).sort("o_id": -1).limit(1)
     if len(orders) == 0:
         return result
     #2. get the customer info from customer table
-    customers = db.customer.find(
+    customers = session.customer.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"c_name": 1, "c_balance": 1}
     ).limit(1)
