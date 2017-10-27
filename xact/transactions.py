@@ -34,7 +34,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
     districts = db.district
     customers = db.customer
     stocks = db.stock
-    orders = db.order
+    orders = db.orders
 
     # Retrieve tax rate and order id from district
     district = districts.find_one({"w_id": w_id, "d_id", d_id})
@@ -224,7 +224,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
 def delivery_transaction(w_id, carrier_id, db):
     for d_id in range(1, 11):
         #1. retrieve the smallest undelivered order
-        orders = db.order.find(
+        orders = db.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"o_id": 1, "ol_amount": 1, "c_id": 1}
         ).sort("o_id": 1).limit(1)
@@ -257,7 +257,7 @@ def delivery_transaction(w_id, carrier_id, db):
 def order_status_transaction(c_w_id, c_d_id, c_id, db):
     result = {}
     #1. get last order of a customer
-    orders = db.order.find(
+    orders = db.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
     ).sort("o_id": -1).limit(1)
@@ -296,7 +296,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, db):
 ###############################################################################
 def stock_level_transaction(w_id, d_id,T, L, db):
     #1. select last L orders of a district from the order table
-    orders = db.order.find(
+    orders = db.orders.find(
         {"w_id": w_id, "d_id": d_id},
         {"o_id": 1, "ordered_items": 1}
     ).sort("o_id": -1).limit(L)
@@ -321,7 +321,7 @@ def stock_level_transaction(w_id, d_id,T, L, db):
 ###############################################################################
 def popular_item_transaction(i, w_id, d_id, L, db):
     #1. get all the L orders for the district from order table
-    orders = db.order.find(
+    orders = db.orders.find(
         {"w_id": w_id, "d_id": d_id},
         {"o_id":1, "popular_items": 1, "popular_items_name": 1, "popular_item_qty": 1, "ordered_items": 1}
     ).sort("o_id": -1).limit(L)
