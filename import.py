@@ -96,7 +96,7 @@ def preprocess_data():
                  "o_id": int(order.o_id)}
         update_elements = {"orderline": order.orderline_set,
                            "popular_items": order.popular_items,
-                           "popular_items_name": order.popular_item_name,
+                           "popular_items_name": order.popular_items_name,
                            "ordered_items": order.ordered_items}
         update = UpdateOne(index, {"$set": update_elements})
         return update
