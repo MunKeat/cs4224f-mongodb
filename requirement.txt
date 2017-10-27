@@ -2,7 +2,7 @@ dill==0.2.7.1
 futures==3.1.1
 multiprocess==0.70.5
 numpy==1.13.3
-pandas==0.16.2
+pandas==0.21.0rc1
 pathos==0.2.1
 pox==0.2.3
 ppft==1.6.4.7.1
