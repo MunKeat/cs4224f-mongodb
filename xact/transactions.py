@@ -65,7 +65,6 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
     total_amount = 0.0
     ordered_items_id = []
     ordered_items = {}
-    popular_items = []
     popular_item_quantity = 0
     popular_items_name = []
     is_all_local = True
@@ -104,11 +103,11 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
         # Update popular item and ordered_items
         if (ol_quantity > popular_item_qty):
             popular_item_qty = ol_quantity
-            popular_item_id = [ol_i_id]
-            popular_item_name = [i_name]
+            popular_items_id = [ol_i_id]
+            popular_items_name = [i_name]
         elif (ol_quantity == popular_item_qty):
-            popular_item_id.append(ol_i_id)
-            popular_item_name.append(i_name)
+            popular_items_id.append(ol_i_id)
+            popular_items_name.append(i_name)
         
         ordered_items_id.append(ol_i_id)
         ordered_item_info = {
@@ -170,7 +169,51 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
 #
 ###############################################################################
 def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
-    pass
+    customers = db.customer
+    districts = db.district
+    warehouses = db.warehouse
+    # Update Warehouse, District, Customer
+    warehouses.update_one({"w_id": c_w_id}, {"$inc": {"w_ytd": payment}})
+    districts.update_one({"w_id": c_w_id, "d_id": c_d_id}, {"$inc": {"d_ytd": payment}})
+    customers.update_one(
+        {"w_id": c_w_id, "d_id": c_d_id,, "c_id": c_id},
+        {
+            "$inc": {
+                "c_balance": -payment
+                "c_ytd_payment": payment
+                "c_payment_cnt": 1
+            }
+        }
+    )
+
+    result = {}
+    # Retrieve customer information
+    customer = customers.find_one(
+        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
+        fields = {
+            'c_ytd_payment': False, 
+            'c_payment_cnt': False,
+            'c_delivery_cnt': False,
+            'c_data': False,
+            '_id': False
+        }
+    )
+    result.update(customer)
+    # Retrieve warehouse information
+    warehouses = warehouses.find_one(
+        {"w_id": c_w_id}, 
+        fields = {'w_address': True, '_id': False}
+    )
+    result.update(warehouses)
+    # Retrieve district information
+    district = districts.find_one(
+        {"w_id": c_w_id, "d_id": c_d_id},
+        fields = {'d_address': True, '_id': False}
+    )
+    result.update(district)
+
+    return result
+
 
 
 ###############################################################################
