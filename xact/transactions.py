@@ -50,7 +50,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
     c_credit = customer.c_credit
     c_discount = customer.c_discount
 
-    # Prepare the new order 
+    # Prepare the new order
     o_entry_d = datetime.utcnow()
     order = {
         "w_id": w_id,
@@ -108,11 +108,11 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
         elif (ol_quantity == popular_item_qty):
             popular_items_id.append(ol_i_id)
             popular_items_name.append(i_name)
-        
+
         ordered_items_id.append(ol_i_id)
         ordered_item_info = {
-            'item_number': ol_i_id, 
-            'i_name': i_name, 
+            'item_number': ol_i_id,
+            'i_name': i_name,
             'supplier_warehouse': ol_supply_w_id,
             'quantity': ol_quantity,
             'ol_amount': ol_amount,
@@ -131,7 +131,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
         }
         orderlines.append(orderline)
         total_amount += ol_amount
-    
+
     # Update order information
     final_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
     order["o_total_amount"] = final_amount
@@ -144,7 +144,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, db):
 
     # Insert order
     orders.insert_one(order)
-    
+
     # Process output
     result = {
         'w_id': w_id,
@@ -191,7 +191,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
     customer = customers.find_one(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         fields = {
-            'c_ytd_payment': False, 
+            'c_ytd_payment': False,
             'c_payment_cnt': False,
             'c_delivery_cnt': False,
             'c_data': False,
@@ -201,7 +201,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, db):
     result.update(customer)
     # Retrieve warehouse information
     warehouses = warehouses.find_one(
-        {"w_id": c_w_id}, 
+        {"w_id": c_w_id},
         fields = {'w_address': True, '_id': False}
     )
     result.update(warehouses)
@@ -360,15 +360,13 @@ def popular_item_transaction(i, w_id, d_id, L, db):
 ###############################################################################
 def top_balance_transaction(db):
     customer_list = []
-    results = session.customer.find()\
+    results = session.customer.find({},
+                                    {"c_name": 1,
+                                     "c_balance": 1,
+                                     "w_name": 1,
+                                     "d_name": 1})\
                               .sort({"c_balance": -1})\
                               .limit(query_limit)
     for result in results:
-        result = {"c_first": result.c_first,
-                  "c_middle": result.c_middle,
-                  "c_last": result.c_last,
-                  "c_balance": result.c_balance,
-                  "w_name": result.w_name,
-                  "d_name": result.d_name}
         customer_list.append(result)
     return(output(customer_list))
