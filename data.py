@@ -111,7 +111,7 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_warehouse.shape))
         # Create key
-        processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
+        # processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("w_address", ["w_street_1",
                                                           "w_street_2",
@@ -138,14 +138,15 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_district.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
-        processed_district.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
+        # processed_district.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("d_address", ["d_street_1",
                                                           "d_street_2",
                                                           "d_city",
                                                           "d_state",
                                                           "d_zip"])
+        processed_district.rename(columns=new_columns, inplace=True)
         self.helper_write_csv(processed_district, filepath)
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
@@ -220,8 +221,8 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                df_customer.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
-        df_customer.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
+        # df_customer.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("c_name", ["c_first",
                                                        "c_middle",
@@ -255,8 +256,8 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_stock.shape))
         # Create key
-        new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
-        processed_stock.rename(columns=new_columns, inplace=True)
+        # new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
+        # processed_stock.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("district_info", ["s_dist_01",
                                                               "s_dist_02",
