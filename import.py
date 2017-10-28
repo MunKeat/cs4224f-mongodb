@@ -9,7 +9,8 @@ from config import parameters as conf
 from data import Data
 
 
-connection = MongoClient(w=conf["write_concern"])
+connection = MongoClient(w=conf["write_concern"],
+                         readConcernLevel=conf["read_concern"])
 db = connection[conf["database"]]
 
 # Schema
