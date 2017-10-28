@@ -12,6 +12,8 @@ from data import Data
 connection = MongoClient(w=conf["write_concern"])
 db = connection[conf["database"]]
 
+# Schema
+extract_orderline = conf['extract_orderline']
 
 # Todo: Remove hardcoding of mongoimport
 mongoimport = "/home/stuproj/cs4224f/mk-mongo/mongodb-linux-x86_64-3.4.7/bin/mongoimport"
@@ -75,8 +77,13 @@ def create_indexes():
                               ("c_id", pymongo.ASCENDING)], unique=True)
     # Index: c_balance
     db.customer.create_index([("c_balance", pymongo.DESCENDING)])
-    # Index: o_id
-
+    # Index: Orderline
+    if extract_orderline:
+        db.orderline.create_index([("w_id", pymongo.DESCENDING),
+                                   ("d_id", pymongo.DESCENDING),
+                                   ("o_id", pymongo.DESCENDING),
+                                   ("ol_number", pymongo.DESCENDING)],
+                                  unique=True)
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
 
@@ -94,10 +101,15 @@ def preprocess_data():
     def get_order_updates(order):
         index = {"w_id": int(order.w_id), "d_id": int(order.d_id),
                  "o_id": int(order.o_id)}
-        update_elements = {"orderline": order.orderline_set,
-                           "popular_items": order.popular_items,
-                           "popular_items_name": order.popular_items_name,
-                           "ordered_items": order.ordered_items}
+        if not extract_orderline:
+            update_elements = {"orderline": order.orderline_set,
+                               "popular_items": order.popular_items,
+                               "popular_items_name": order.popular_items_name,
+                               "ordered_items": order.ordered_items}
+        else:
+            update_elements = {"popular_items": order.popular_items,
+                               "popular_items_name": order.popular_items_name,
+                               "ordered_items": order.ordered_items}
         update = UpdateOne(index, {"$set": update_elements})
         return update
     # Process orders; convert string into array
@@ -112,21 +124,23 @@ def preprocess_data():
     for id in ["w_id", "d_id", "o_id"]:
         orderlines[id] = orderlines[id].astype('str')
     # Get the list of documents for each order's orderline
-    proc_orderlines = orderlines.groupby(["w_id", "d_id", "o_id"])\
-                                .apply(lambda x: x[["ol_number",
-                                                    "ol_i_id",
-                                                    "ol_i_name",
-                                                    "ol_amount",
-                                                    "ol_supply_w_id",
-                                                    "ol_quantity",
-                                                    "ol_dist_info"]].
-                                       to_dict(orient='records'))\
-                                .reset_index()
-    # Rename columns
-    proc_orderlines.columns = ["w_id", "d_id", "o_id", "orderline_set"]
-    proc_orders = proc_orders.merge(proc_orderlines,
-                                    on=["w_id", "d_id", "o_id"],
-                                    how='left')
+    # Ignore if extract_orderline=True
+    if not extract_orderline:
+        proc_orderlines = orderlines.groupby(["w_id", "d_id", "o_id"])\
+                                    .apply(lambda x: x[["ol_number",
+                                                        "ol_i_id",
+                                                        "ol_i_name",
+                                                        "ol_amount",
+                                                        "ol_supply_w_id",
+                                                        "ol_quantity",
+                                                        "ol_dist_info"]].
+                                           to_dict(orient='records'))\
+                                    .reset_index()
+        # Rename columns
+        proc_orderlines.columns = ["w_id", "d_id", "o_id", "orderline_set"]
+        proc_orders = proc_orders.merge(proc_orderlines,
+                                        on=["w_id", "d_id", "o_id"],
+                                        how='left')
     # Convert string type to list object for mongodb
     proc_orders["popular_items"] = proc_orders["popular_items"].\
                                             map(lambda x:
@@ -137,9 +151,14 @@ def preprocess_data():
     proc_orders["ordered_items"] = proc_orders["ordered_items"].\
                                             map(lambda x:
                                                 convert_str_to_list(x, True))
-    proc_orders = proc_orders[["w_id", "d_id", "o_id", "orderline_set",
-                               "popular_items", "popular_items_name",
-                               "ordered_items"]]
+    # Ignore if extract_orderline=True
+    if not extract_orderline:
+        proc_orders = proc_orders[["w_id", "d_id", "o_id", "orderline_set",
+                                   "popular_items", "popular_items_name",
+                                   "ordered_items"]]
+    else:
+        proc_orders = proc_orders[["w_id", "d_id", "o_id", "popular_items",
+                                   "popular_items_name", "ordered_items"]]
     proc_orders["update"] = proc_orders.apply(func=get_order_updates, axis=1)
     proc_dataframe_end = time.time()
     debug("Processing of main order dataframe: {}s\n"
@@ -148,7 +167,11 @@ def preprocess_data():
     bulk_write_start = time.time()
     try:
         # Access "orders" collection, with specific write concern
-        write = WriteConcern(w=conf["write_concern"])
+        # Check if write concern is a string or not
+        write_concern = conf["write_concern"]
+        write_concern = int(write_concern) if write_concern.isdigit()\
+                                            else write_concern
+        write = WriteConcern(w=write_concern)
         orders_collection = db.get_collection('orders',
                                               write_concern=write)
         result = orders_collection.bulk_write(order_update_request,

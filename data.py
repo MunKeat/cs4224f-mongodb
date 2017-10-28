@@ -85,7 +85,7 @@ class Data:
     def to_list(self, x):
         return str(x.values.tolist())
 
-    def get_preprocessed_orderline(self, default_string=True):
+    def create_orderline(self, default_string=True, return_dataframe=True):
         " Return orderline dataframe with item name "
         filepath = self.get_full_filepath("mongo_orderline.csv")
         df_orderline = self.read_original_csv("order-line", default_string)
@@ -105,7 +105,10 @@ class Data:
         processsed_orderline.rename(columns={'i_name': 'ol_i_name'},
                                     inplace=True)
         self.helper_write_csv(processsed_orderline, filepath)
-        return processsed_orderline
+        if return_dataframe:
+            return processsed_orderline
+        elif os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            return ("orderline", filepath)
 
     def create_warehouse(self):
         filepath = self.get_full_filepath("mongo_warehouse.csv")
@@ -115,8 +118,6 @@ class Data:
                                             "w_zip", "w_ytd"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_warehouse.shape))
-        # Create key
-        # processed_warehouse.rename(columns={"_id": "w_id"}, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("w_address", ["w_street_1",
                                                           "w_street_2",
@@ -142,9 +143,6 @@ class Data:
                                                  "d_next_o_id"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_district.shape))
-        # Create key
-        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id"])
-        # processed_district.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("d_address", ["d_street_1",
                                                           "d_street_2",
@@ -161,7 +159,7 @@ class Data:
         filepath = self.get_full_filepath("mongo_orders.csv")
         df_customer = self.read_original_csv("customer")
         df_orders = self.read_original_csv("order")
-        df_orderlines = self.get_preprocessed_orderline(False)
+        df_orderlines = self.create_orderline(default_string=False)
         # Select relevant field for customer
         df_customer = df_customer[["w_id", "d_id", "c_id",
                                    "c_first", "c_middle", "c_last"]]
@@ -181,35 +179,27 @@ class Data:
         grp_pop_product = grp_pop_product[["w_id", "d_id", "o_id", "ol_i_id",
                                            "ol_i_name", "ol_quantity"]]
         grp_pop_product = grp_pop_product.groupby(orderline_agg_id)
-        agg_2_start = time.time()
         # 2. Get popular item ID(s) as a list
         grp_pop_ids = grp_pop_product['ol_i_id'].agg([self.to_list])\
                                                 .reset_index()
         grp_pop_ids.rename(columns={'to_list': 'popular_items'},
                            inplace=True)
-        agg_2_end = time.time()
-        agg_3_start = time.time()
         # 3. Get popular item name(s) as a list
         grp_pop_names = grp_pop_product['ol_i_name'].agg([self.to_list])\
                                                     .reset_index()
         grp_pop_names.rename(columns={'to_list': 'popular_items_name'},
                              inplace=True)
-        agg_3_end = time.time()
-        agg_4_start = time.time()
         # 4. Get popular item quantity
         grp_pop_qty = grp_pop_product['ol_quantity'].nth(0).reset_index()
         grp_pop_qty.rename(columns={'ol_quantity': 'popular_item_qty'},
                            inplace=True)
-        agg_4_end = time.time()
         # End of 4
         grp_orderlines = df_orderlines.groupby(orderline_agg_id)
-        agg_5_start = time.time()
         # 5. Get list of all item IDs per order
         grp_order_ids = grp_orderlines['ol_i_id'].agg([self.to_distinct_list])\
                                                  .reset_index()
         grp_order_ids.rename(columns={'to_distinct_list': 'ordered_items'},
                              inplace=True)
-        agg_5_end = time.time()
         # 6. Get total amount per order
         grp_order_amt = grp_orderlines['ol_amount'].agg([sum]).reset_index()
         # 7. Get o_delivery_d
@@ -228,14 +218,9 @@ class Data:
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_orders.shape))
         self.helper_write_csv(processed_orders, filepath)
-        # self.debug("Aggregate 2: {}s\n".format(agg_2_end - agg_2_start))
-        # self.debug("Aggregate 3: {}s\n".format(agg_3_end - agg_3_start))
-        # self.debug("Aggregate 4: {}s\n".format(agg_4_end - agg_4_start))
-        # self.debug("Aggregate 5: {}s\n".format(agg_5_end - agg_5_start))
         # Return filepath if exist
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             return ("orders", filepath)
-
 
     def create_customer(self):
         filepath = self.get_full_filepath("mongo_customer.csv")
@@ -252,9 +237,6 @@ class Data:
                                         on=["w_id", "d_id"], how='left')
         self.debug("Processed {}: {}\n".format(filepath,
                                                df_customer.shape))
-        # Create key
-        # new_columns = self.rename_as_nested("_id", ["w_id", "d_id", "c_id"])
-        # df_customer.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("c_name", ["c_first",
                                                        "c_middle",
@@ -287,9 +269,6 @@ class Data:
                                            "i_price", "i_im_id", "i_data"]]
         self.debug("Processed {}: {}\n".format(filepath,
                                                processed_stock.shape))
-        # Create key
-        # new_columns = self.rename_as_nested("_id", ["w_id", "i_id"])
-        # processed_stock.rename(columns=new_columns, inplace=True)
         # Rename column to allow for nesting
         new_columns = self.rename_as_nested("district_info", ["s_dist_01",
                                                               "s_dist_02",
@@ -307,11 +286,15 @@ class Data:
         if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
             return ("stock", filepath)
 
-
     def preprocess(self):
+        # Check if orderline should be extracted
+        extract_orderline = conf['extract_orderline']
         pool = Pool()
         start = time.time()
         # Run in parallel
+        if extract_orderline:
+            res_orderline = pool.apipe(self.create_orderline,
+                                       return_dataframe=False)
         res_warehouse = pool.apipe(self.create_warehouse)
         res_district = pool.apipe(self.create_district)
         res_order = pool.apipe(self.create_order)
@@ -323,6 +306,8 @@ class Data:
         list_of_processed_files = [res_warehouse.get(), res_district.get(),
                                    res_order.get(), res_customer.get(),
                                    res_stock.get()]
+        if extract_orderline:
+            list_of_processed_files.append(res_orderline.get())
         end = time.time()
         self.debug("Preprocessing of csv file took {}s".format(end - start))
         return list_of_processed_files
