@@ -9,7 +9,7 @@ from config import parameters as conf
 from data import Data
 
 
-connection = MongoClient(w=conf["write_concern"],
+connection = MongoClient(host='localhost',port=47017,w=conf["write_concern"],
                          readConcernLevel=conf["read_concern"])
 db = connection[conf["database"]]
 
@@ -17,7 +17,7 @@ db = connection[conf["database"]]
 extract_orderline = conf['extract_orderline']
 
 # Todo: Remove hardcoding of mongoimport
-mongoimport = "/home/stuproj/cs4224f/mk-mongo/mongodb-linux-x86_64-3.4.7/bin/mongoimport"
+mongoimport = "/temp/cs4224f/mongodb/bin/mongoimport"
 
 
 def debug(message):

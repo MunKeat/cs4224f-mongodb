@@ -1,16 +1,17 @@
 ##
 ##config server
-screen -dmS node_cs mongod --configsvr --replSet cs --port 27020 --dbpath=/temp/cs4224f/data-mongo/sr0 
+screen -dmS node0_cs0 mongod --configsvr --replSet cs0 --port 27030 --dbpath=/temp/cs4224f/data-mongo/cs0_data
+screen -dmS node0_cs1 mongod --configsvr --replSet cs0 --port 27031 --dbpath=/temp/cs4224f/data-mongo/cs1_data
+screen -dmS node0_cs2 mongod --configsvr --replSet cs0 --port 27032 --dbpath=/temp/cs4224f/data-mongo/cs2_data
+
 rs.initiate(
   {
-    _id: "cs",
+    _id: "cs0",
     configsvr: true,
     members: [
-      { _id : 0, host : "xcnd25.comp.nus.edu.sg:27020" },
-      { _id : 1, host : "xcnd26.comp.nus.edu.sg:27020" },
-      { _id : 2, host : "xcnd27.comp.nus.edu.sg:27020" },
-      { _id : 3, host : "xcnd28.comp.nus.edu.sg:27020" },
-      { _id : 4, host : "xcnd29.comp.nus.edu.sg:27020" }
+      { _id : 0, host : "xcnd25.comp.nus.edu.sg:27030" },
+      { _id : 1, host : "xcnd25.comp.nus.edu.sg:27031" },
+      { _id : 2, host : "xcnd25.comp.nus.edu.sg:27032" },
     ]
   }
 );
@@ -29,34 +30,57 @@ screen -dmS node0_r0 mongod --port 27017 --dbpath=/temp/cs4224f/data-mongo/r0 --
 screen -dmS node0_r1 mongod --port 27018 --dbpath=/temp/cs4224f/data-mongo/r1 --shardsvr --replSet rs0
 screen -dmS node0_r2 mongod --port 27019 --dbpath=/temp/cs4224f/data-mongo/r2 --shardsvr --replSet rs0
 
-##for mongo shell
-rs.initiate();
-rs.add("xcnd25.comp.nus.edu.sg:27018");
-rs.add("xcnd25.comp.nus.edu.sg:27019");
+rs.initiate(
+  {
+    _id: "rs0",
+    members: [
+      { _id : 0, host : "xcnd25.comp.nus.edu.sg:27017" },
+      { _id : 1, host : "xcnd25.comp.nus.edu.sg:27018" },
+      { _id : 2, host : "xcnd25.comp.nus.edu.sg:27019" },
+    ]
+  }
+);
 
-screen -dmS node0_s mongos --port 27021 --configdb cs/xcnd25.comp.nus.edu.sg:27020,xcnd26.comp.nus.edu.sg:27020,xcnd27.comp.nus.edu.sg:27020,xcnd28.comp.nus.edu.sg:27020,xcnd29.comp.nus.edu.sg:27020
+
+screen -dmS node0_s mongos --port 47017 --configdb cs0/xcnd25.comp.nus.edu.sg:27030,xcnd25.comp.nus.edu.sg:27031,xcnd25.comp.nus.edu.sg:27032
 
 #### node1
 screen -dmS node1_r0 mongod --port 27017 --dbpath=/temp/cs4224f/data-mongo/r0 --shardsvr --replSet rs1
 screen -dmS node1_r1 mongod --port 27018 --dbpath=/temp/cs4224f/data-mongo/r1 --shardsvr --replSet rs1
 screen -dmS node1_r2 mongod --port 27019 --dbpath=/temp/cs4224f/data-mongo/r2 --shardsvr --replSet rs1
 
-rs.initiate();
-rs.add("xcnd26.comp.nus.edu.sg:27018");
-rs.add("xcnd26.comp.nus.edu.sg:27019");
+rs.initiate(
+  {
+    _id: "rs1",
+    members: [
+      { _id : 0, host : "xcnd26.comp.nus.edu.sg:27017" },
+      { _id : 1, host : "xcnd26.comp.nus.edu.sg:27018" },
+      { _id : 2, host : "xcnd26.comp.nus.edu.sg:27019" },
+    ]
+  }
+);
 
-screen -dmS node1_s mongos --port 27021 --configdb cs/xcnd25.comp.nus.edu.sg:27020,xcnd26.comp.nus.edu.sg:27020,xcnd27.comp.nus.edu.sg:27020,xcnd28.comp.nus.edu.sg:27020,xcnd29.comp.nus.edu.sg:27020
+
+screen -dmS node1_s mongos --port 47017 --configdb cs0/xcnd25.comp.nus.edu.sg:27030,xcnd25.comp.nus.edu.sg:27031,xcnd25.comp.nus.edu.sg:27032
 
 #### node2
 screen -dmS node2_r0 mongod --port 27017 --dbpath=/temp/cs4224f/data-mongo/r0 --shardsvr --replSet rs2
 screen -dmS node2_r1 mongod --port 27018 --dbpath=/temp/cs4224f/data-mongo/r1 --shardsvr --replSet rs2
 screen -dmS node2_r2 mongod --port 27019 --dbpath=/temp/cs4224f/data-mongo/r2 --shardsvr --replSet rs2
 
-rs.initiate();
-rs.add("xcnd27.comp.nus.edu.sg:27018");
-rs.add("xcnd27.comp.nus.edu.sg:27019");
+rs.initiate(
+  {
+    _id: "rs2",
+    members: [
+      { _id : 0, host : "xcnd27.comp.nus.edu.sg:27017" },
+      { _id : 1, host : "xcnd27.comp.nus.edu.sg:27018" },
+      { _id : 2, host : "xcnd27.comp.nus.edu.sg:27019" },
+    ]
+  }
+);
 
-screen -dmS node2_s mongos --port 27021 --configdb cs/xcnd25.comp.nus.edu.sg:27020,xcnd26.comp.nus.edu.sg:27020,xcnd27.comp.nus.edu.sg:27020,xcnd28.comp.nus.edu.sg:27020,xcnd29.comp.nus.edu.sg:27020
+
+screen -dmS node2_s mongos --port 47017 --configdb cs0/xcnd25.comp.nus.edu.sg:27030,xcnd25.comp.nus.edu.sg:27031,xcnd25.comp.nus.edu.sg:27032
 
 
 #### node3
@@ -64,25 +88,38 @@ screen -dmS node3_r0 mongod --port 27017 --dbpath=/temp/cs4224f/data-mongo/r0 --
 screen -dmS node3_r1 mongod --port 27018 --dbpath=/temp/cs4224f/data-mongo/r1 --shardsvr --replSet rs3
 screen -dmS node3_r2 mongod --port 27019 --dbpath=/temp/cs4224f/data-mongo/r2 --shardsvr --replSet rs3
 
-rs.initiate();
+rs.initiate(
+  {
+    _id: "rs3",
+    members: [
+      { _id : 0, host : "xcnd28.comp.nus.edu.sg:27017" },
+      { _id : 1, host : "xcnd28.comp.nus.edu.sg:27018" },
+      { _id : 2, host : "xcnd28.comp.nus.edu.sg:27019" },
+    ]
+  }
+);
 
-rs.add("xcnd28.comp.nus.edu.sg:27018");
-rs.add("xcnd28.comp.nus.edu.sg:27019");
 
-screen -dmS node3_s mongos --port 27021 --configdb cs/xcnd25.comp.nus.edu.sg:27020,xcnd26.comp.nus.edu.sg:27020,xcnd27.comp.nus.edu.sg:27020,xcnd28.comp.nus.edu.sg:27020,xcnd29.comp.nus.edu.sg:27020
-
+screen -dmS node3_s mongos --port 47017 --configdb cs0/xcnd25.comp.nus.edu.sg:27030,xcnd25.comp.nus.edu.sg:27031,xcnd25.comp.nus.edu.sg:27032
 
 #### node4
 screen -dmS node4_r0 mongod --port 27017 --dbpath=/temp/cs4224f/data-mongo/r0 --shardsvr --replSet rs4
 screen -dmS node4_r1 mongod --port 27018 --dbpath=/temp/cs4224f/data-mongo/r1 --shardsvr --replSet rs4
 screen -dmS node4_r2 mongod --port 27019 --dbpath=/temp/cs4224f/data-mongo/r2 --shardsvr --replSet rs4
 
-rs.initiate();
-rs.add("xcnd29.comp.nus.edu.sg:27018");
-rs.add("xcnd29.comp.nus.edu.sg:27019");
+rs.initiate(
+  {
+    _id: "rs4",
+    members: [
+      { _id : 0, host : "xcnd29.comp.nus.edu.sg:27017" },
+      { _id : 1, host : "xcnd29.comp.nus.edu.sg:27018" },
+      { _id : 2, host : "xcnd29.comp.nus.edu.sg:27019" },
+    ]
+  }
+);
 
-screen -dmS node4_s mongos --port 27021 --configdb cs/xcnd25.comp.nus.edu.sg:27020,xcnd26.comp.nus.edu.sg:27020,xcnd27.comp.nus.edu.sg:27020,xcnd28.comp.nus.edu.sg:27020,xcnd29.comp.nus.edu.sg:27020
 
+screen -dmS node4_s mongos --port 47017 --configdb cs0/xcnd25.comp.nus.edu.sg:27030,xcnd25.comp.nus.edu.sg:27031,xcnd25.comp.nus.edu.sg:27032
 
 ##on mongos
 sh.addShard("rs0/xcnd25.comp.nus.edu.sg:27017");
@@ -91,4 +128,4 @@ sh.addShard("rs2/xcnd27.comp.nus.edu.sg:27017");
 sh.addShard("rs3/xcnd28.comp.nus.edu.sg:27017");
 sh.addShard("rs4/xcnd29.comp.nus.edu.sg:27017");
 
-sh.enableSharding("mongo_warehouse")
+sh.enableSharding("mongo_warehouse");

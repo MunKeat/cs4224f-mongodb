@@ -3,10 +3,10 @@ from pymongo import MongoClient
 from datetime import datetime
 from config import parameters as conf
 
-connection = MongoClient(w=conf["write_concern"],
-                         readConcernLevel=conf["read_concern"])
-db = connection[conf["database"]]
-
+#connection = MongoClient(w=conf["write_concern"],
+#                         readConcernLevel=conf["read_concern"])
+#db = connection[conf["database"]]
+db = [] # for not trying to connnect not exist server
 ###############################################################################
 #
 # Utility Function(s)
