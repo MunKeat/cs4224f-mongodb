@@ -14,8 +14,7 @@ db = connection[conf["database"]]
 import pprint
 
 def output(dictionary):
-    #TODO: change output form
-    output_form = "PRETTY_PRINT"
+    output_form = conf["output_form"]
     if output_form == "RAW_PRINT":
         print(dictionary)
         return None
