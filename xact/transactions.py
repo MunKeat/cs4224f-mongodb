@@ -305,9 +305,11 @@ def stock_level_transaction(w_id, d_id, T, L, session=db):
     # 1. Select last L orders of a district from the order table
     orders = session.orders.find(
         {"w_id": w_id, "d_id": d_id},
-        {"ordered_items": 1}
+        {"_id": 0, "ordered_items": 1}
     ).sort([("o_id", -1)]).limit(L)
     # 2. Find the set of items in all the orderlines
+    if orders.count() <= 0:
+        return {}
     all_item_id = set()
     for order in orders:
         all_item_id = all_item_id | set(list(order["ordered_items"]))
@@ -329,7 +331,8 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
     main_output = {"w_id": w_id, "d_id": d_id, "L": L}
     # 1. Select last L orders of a district from the order table
     results = db.orders.find({"w_id": w_id, "d_id": d_id},
-                             {"c_name": 1,
+                             {"_id": 0,
+                              "c_name": 1,
                               "o_id": 1,
                               "o_entry_d": 1,
                               "popular_items": 1,
@@ -338,7 +341,9 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
                               "ordered_items": 1})\
                       .sort([("o_id", -1)])\
                       .limit(L)
-    number_of_orders = 0
+    number_of_orders = results.count()
+    if number_of_orders <= 0:
+        return {}
     orders = []
     # Following lists will be used to calculate part II
     orders_i_id = []
@@ -390,7 +395,8 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
 def top_balance_transaction(session=db, query_limit=10):
     customer_list = []
     results = session.customer.find({},
-                                    {"c_name": 1,
+                                    {"_id": 0,
+                                     "c_name": 1,
                                      "c_balance": 1,
                                      "w_name": 1,
                                      "d_name": 1})\
