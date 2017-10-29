@@ -56,7 +56,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     d_tax = district["d_tax"]
     # Retrieve customer info
     customer = customers.find_one({"w_id": w_id, "d_id": d_id,
-                                   "c_id": c_id}, fields={'_id': False})
+                                   "c_id": c_id}, projection={'_id': False})
     c_name = customer["c_name"]
     c_last = c_name["c_last"]
     c_credit = customer["c_credit"]
@@ -74,17 +74,15 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     }
     orderlines = []
     total_amount = 0.0
-    ordered_items_id = []
-    ordered_items = {}
+    ordered_items = []
+    ordered_items_info = []
     popular_item_qty = 0
+    popular_items = []
     popular_items_name = []
     is_all_local = True
-    if (d_id == 10):
-        s_dist_col_name = 's_dist_info_' + str(d_id)
-    elif (d_id < 10):
-        s_dist_col_name = 's_dist_info_0' + str(d_id)
+    
     # Prepare an orderline for each item
-    for ol_number in (0, M):
+    for ol_number in range(0, M):
         item = items[ol_number]
         ol_i_id = item[0]
         ol_supply_w_id = item[1]
@@ -114,12 +112,12 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         # Update popular item and ordered_items
         if (ol_quantity > popular_item_qty):
             popular_item_qty = ol_quantity
-            popular_items_id = [ol_i_id]
+            popular_items = [ol_i_id]
             popular_items_name = [i_name]
         elif (ol_quantity == popular_item_qty):
-            popular_items_id.append(ol_i_id)
+            popular_items.append(ol_i_id)
             popular_items_name.append(i_name)
-        ordered_items_id.append(ol_i_id)
+        ordered_items.append(ol_i_id)
         ordered_item_info = {
             'item_number': ol_i_id,
             'i_name': i_name,
@@ -128,7 +126,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
             'ol_amount': ol_amount,
             's_quantity': s_quantity
         }
-        ordered_items.append(ordered_item_info)
+        ordered_items_info.append(ordered_item_info)
         # Add new order line
         orderline = {
             "w_id": w_id,
@@ -148,10 +146,10 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     # Update order information
     final_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
     order["o_total_amount"] = final_amount
-    order["popular_items"] = popular_item_id
-    order["popular_items_name"] = popular_item_name
+    order["popular_items"] = popular_items
+    order["popular_items_name"] = popular_items_name
     order["ordered_items"] = ordered_items
-    order["popular_item_qty"] = popular_item_quantity
+    order["popular_item_qty"] = popular_item_qty
     order["o_all_local"] = is_all_local
 
     # Insert order
@@ -171,7 +169,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         'o_entry_d': o_entry_d,
         'num_items': M,
         'total_amount': final_amount,
-        'ordered_item': ordered_items
+        'ordered_item': ordered_items_info
     }
     return output(result)
 
@@ -188,11 +186,11 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
     warehouses.update_one({"w_id": c_w_id}, {"$inc": {"w_ytd": payment}})
     districts.update_one({"w_id": c_w_id, "d_id": c_d_id}, {"$inc": {"d_ytd": payment}})
     customers.update_one(
-        {"w_id": c_w_id, "d_id": c_d_id,, "c_id": c_id},
+        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {
             "$inc": {
-                "c_balance": -payment
-                "c_ytd_payment": payment
+                "c_balance": -payment,
+                "c_ytd_payment": payment,
                 "c_payment_cnt": 1
             }
         }
@@ -202,7 +200,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
     # Retrieve customer information
     customer = customers.find_one(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
-        fields = {
+        projection = {
             'c_ytd_payment': False,
             'c_payment_cnt': False,
             'c_delivery_cnt': False,
@@ -214,13 +212,13 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
     # Retrieve warehouse information
     warehouses = warehouses.find_one(
         {"w_id": c_w_id},
-        fields = {'w_address': True, '_id': False}
+        projection = {'w_address': True, '_id': False}
     )
     result.update(warehouses)
     # Retrieve district information
     district = districts.find_one(
         {"w_id": c_w_id, "d_id": c_d_id},
-        fields = {'d_address': True, '_id': False}
+        projection = {'d_address': True, '_id': False}
     )
     result.update(district)
 
@@ -238,7 +236,7 @@ def delivery_transaction(w_id, carrier_id, session=db):
         orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"_id": 0, "o_id": 1, "ol_amount": 1, "c_id": 1}
-        ).sort("o_id": 1).limit(1)
+        ).sort([("o_id", 1)]).limit(1)
         if orders.count() == 0:
             continue
         order = orders.next()
