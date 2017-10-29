@@ -239,7 +239,7 @@ def delivery_transaction(w_id, carrier_id, session=db):
         orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"o_id": 1, "ol_amount": 1, "c_id": 1}
-        ).sort("o_id", 1).limit(1)
+        ).sort([("o_id", 1)]).limit(1)
         if len(orders) == 0:
             continue
         o_id = orders[0].o_id
@@ -271,7 +271,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     orders = session.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
-    ).sort("o_id", -1).limit(1)
+    ).sort([("o_id", -1)]).limit(1)
     if len(orders) == 0:
         return result
     #2. get the customer info from customer table
