@@ -50,14 +50,14 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     orders = session.orders
 
     # Retrieve tax rate and order id from district
-    district = districts.find_one({"w_id": w_id, "d_id", d_id})
+    district = districts.find_one({"w_id": w_id, "d_id": d_id})
     district_id = district._id
     o_id = district.d_next_o_id
     w_tax = district.w_id
     d_tax = district.d_id
 
     # Retrieve customer info
-    customer = customers.find_one({"w_id": w_id, "d_id", d_id, "c_id": c_id}, fields = {'_id':False})
+    customer = customers.find_one({"w_id": w_id, "d_id": d_id, "c_id": c_id}, fields = {'_id':False})
     c_name = customer.c_name
     c_last = c_name.c_last
     c_credit = customer.c_credit
@@ -104,7 +104,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         adjusted_qty = s_quantity - ol_quantity
         adjusted_qty = adjusted_qty + 100 if adjusted_qty < 10 else adjusted_qty
         is_remote = 1 if ol_supply_w_id != w_id else 0
-        is_all_local = False if is_remote == 1
+        is_all_local = False if is_remote == 1 else is_all_local
         stock.update_one(
             {"w_id": ol_supply_w_id, "i_id": ol_i_id},
             {
@@ -189,11 +189,11 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
     warehouses.update_one({"w_id": c_w_id}, {"$inc": {"w_ytd": payment}})
     districts.update_one({"w_id": c_w_id, "d_id": c_d_id}, {"$inc": {"d_ytd": payment}})
     customers.update_one(
-        {"w_id": c_w_id, "d_id": c_d_id,, "c_id": c_id},
+        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {
             "$inc": {
-                "c_balance": -payment
-                "c_ytd_payment": payment
+                "c_balance": -payment,
+                "c_ytd_payment": payment,
                 "c_payment_cnt": 1
             }
         }
@@ -239,7 +239,7 @@ def delivery_transaction(w_id, carrier_id, session=db):
         orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"o_id": 1, "ol_amount": 1, "c_id": 1}
-        ).sort("o_id": 1).limit(1)
+        ).sort("o_id", 1).limit(1)
         if len(orders) == 0:
             continue
         o_id = orders[0].o_id
@@ -271,7 +271,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     orders = session.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
-    ).sort("o_id": -1).limit(1)
+    ).sort("o_id", -1).limit(1)
     if len(orders) == 0:
         return result
     #2. get the customer info from customer table
