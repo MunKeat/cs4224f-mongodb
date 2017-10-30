@@ -242,9 +242,11 @@ def delivery_transaction(w_id, carrier_id, session=db):
         ).sort([("o_id", 1)]).limit(1)
         if orders.count() <= 0:
             continue
-        print(orders[0])
+        #print(orders[0])
         o_id = orders[0]['o_id']
-        o_total_amt = orders[0]['o_total_amt']
+        #o_total_amt = orders[0]['o_total_amt']
+        #TODO: change to o_total_amt
+        o_total_amt = 100
         c_id = orders[0]['c_id']
 
         #2. update the order entry
@@ -271,7 +273,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     #1. get last order of a customer
     orders = session.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
-        {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
+        {"o_id": 1, "orderline": 1, "o_delivery_d": 1, "o_entry_d": 1, "o_carrier_id":1}
     ).sort([("o_id", -1)]).limit(1)
     if orders.count() <= 0:
         return result
@@ -281,20 +283,21 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
         {"c_name": 1, "c_balance": 1}
     ).limit(1)
     #3. get orderline info
-    ol_delivery_d = orders[0]['o_delivery_d']
+    #print(orders[0])
+    ol_delivery_d = orders[0].get('o_delivery_d', None)
     o_items = {}
     for each_orderline in orders[0]['orderline']:
-        o_items[each_orderline.ol_number] = {}
-        o_items[each_orderline.ol_number]['ol_i_id'] = each_orderline['ol_i_id']
-        o_items[each_orderline.ol_number]['ol_supply_w_id'] = each_orderline['ol_supply_w_id']
-        o_items[each_orderline.ol_number]['ol_quantity'] = each_orderline['ol_quantity']
-        o_items[each_orderline.ol_number]['ol_delivery_d'] = ol_delivery_d
+        o_items[each_orderline['ol_number']] = {}
+        o_items[each_orderline['ol_number']]['ol_i_id'] = each_orderline['ol_i_id']
+        o_items[each_orderline['ol_number']]['ol_supply_w_id'] = each_orderline['ol_supply_w_id']
+        o_items[each_orderline['ol_number']]['ol_quantity'] = each_orderline['ol_quantity']
+        o_items[each_orderline['ol_number']]['ol_delivery_d'] = ol_delivery_d
     result['items'] = o_items
     result['c_name'] = customers[0]['c_name']
     result['c_balance'] = customers[0]['c_balance']
     result['o_id'] = orders[0]['o_id']
     result['o_entry_d'] = orders[0]['o_entry_d']
-    result['o_carrier_id'] = orders[0]['o_carrier_id']
+    result['o_carrier_id'] = orders[0].get('o_carrier_id', None)
     return output(result)
 
 
