@@ -104,11 +104,16 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         adjusted_qty = adjusted_qty + 100 if adjusted_qty < 10 else adjusted_qty
         is_remote = 1 if ol_supply_w_id != w_id else 0
         is_all_local = False if is_remote == 1 else is_all_local
+        change_in_qty = adjusted_qty - s_quantity
         stocks.update_one(
             {"w_id": ol_supply_w_id, "i_id": ol_i_id},
             {
-                "$inc": {"s_ytd": ol_quantity, "s_order_cnt": 1, "s_remote_cnt": is_remote},
-                "$set": {"s_quantity": adjusted_qty}
+                "$inc": {
+                    "s_ytd": ol_quantity, 
+                    "s_order_cnt": 1, 
+                    "s_remote_cnt": is_remote, 
+                    "s_quantity": change_in_qty
+                }
             }
         )
         s_quantity = adjusted_qty
