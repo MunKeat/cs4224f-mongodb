@@ -18,13 +18,39 @@ db = connection[conf["database"]]
 # Schema
 extract_orderline = conf['extract_orderline']
 
-# Todo: Remove hardcoding of mongoimport
-mongoimport = "/temp/cs4224f/mongodb/bin/mongoimport"
+# Mongoimport path
+mongoimport = conf["mongoimport"]
 
 
 def debug(message):
         if conf['debug']:
             print(message)
+
+
+def verify_mongoimport():
+    "Verify the path of the mongoimport"
+    global mongoimport
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    # Get path of all mongoimport
+    mongoimport_paths = subprocess.Popen(["whereis", "mongoimport"],
+                                         stdout=subprocess.PIPE)
+    list_of_import_path = mongoimport_paths.stdout.readline().split()
+    list_of_import_path = [mongo for mongo in list_of_import_path
+                                           if os.path.isfile(mongo)]
+    # Question user
+    if not mongoimport:
+        for path in list_of_import_path:
+            prompt = "Is `{}` your mongoimport's path? [y/n] > ".format(path)
+            cont = str(raw_input(prompt))
+            while cont.lower() not in (valid.keys()):
+                cont = str(raw_input("Please enter only [y/n] > "))
+            if valid[cont.lower()]:
+                mongoimport = path
+                return
+        print("It seems that none of the path are valid cqlsh path...")
+        print("Program will now terminate...")
+        sys.exit()
 
 
 def upload_data():
@@ -207,6 +233,7 @@ def cleanup():
 def main():
     main_start = time.time()
     cleanup()
+    verify_mongoimport()
     upload_data()
     create_indexes()
     preprocess_data()
