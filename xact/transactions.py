@@ -45,7 +45,7 @@ def flatten(array):
 # Comment: Assume items is a list of items in the order
 #
 ###############################################################################
-def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
+def new_order_transaction(c_id, w_id, d_id, M, items, session):
     districts = session.district
     customers = session.customer
     stocks = session.stock
@@ -185,7 +185,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
 # TRANSACTION 2
 #
 ###############################################################################
-def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
+def payment_transaction(c_w_id, c_d_id, c_id, payment, session):
     customers = session.customer
     districts = session.district
     warehouses = session.warehouse
@@ -233,7 +233,7 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
 # TRANSACTION 3
 #
 ###############################################################################
-def delivery_transaction(w_id, carrier_id, session=db):
+def delivery_transaction(w_id, carrier_id, session):
     for d_id in range(1, 11):
         timestamp = datetime.utcnow()
         orders = session.orders.find_one_and_update(
@@ -259,7 +259,7 @@ def delivery_transaction(w_id, carrier_id, session=db):
 # TRANSACTION 4
 #
 ###############################################################################
-def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
+def order_status_transaction(c_w_id, c_d_id, c_id, session):
     result = {}
     #1. get last order of a customer
     orders = session.orders.find(
@@ -297,7 +297,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
 # TRANSACTION 5
 #
 ###############################################################################
-def stock_level_transaction(w_id, d_id, T, L, session=db):
+def stock_level_transaction(w_id, d_id, T, L, session):
     # 1. Select last L orders of a district from the order table
     orders = session.orders.find(
         {"w_id": w_id, "d_id": d_id},
@@ -323,10 +323,10 @@ def stock_level_transaction(w_id, d_id, T, L, session=db):
 # TRANSACTION 6
 #
 ###############################################################################
-def popular_item_transaction(i, w_id, d_id, L, session=db):
+def popular_item_transaction(i, w_id, d_id, L, session):
     main_output = {"w_id": w_id, "d_id": d_id, "L": L}
     # 1. Select last L orders of a district from the order table
-    results = db.orders.find({"w_id": w_id, "d_id": d_id},
+    results = session.orders.find({"w_id": w_id, "d_id": d_id},
                              {"_id": 0,
                               "c_name": 1,
                               "o_id": 1,
@@ -388,7 +388,7 @@ def popular_item_transaction(i, w_id, d_id, L, session=db):
 # TRANSACTION 7
 #
 ###############################################################################
-def top_balance_transaction(session=db, query_limit=10):
+def top_balance_transaction(session, query_limit=10):
     customer_list = []
     results = session.customer.find({},
                                     {"_id": 0,
