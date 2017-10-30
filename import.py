@@ -95,12 +95,12 @@ def create_indexes():
                                   unique=True)
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
-    client.admin.command('enableSharding',conf["database"])
-    client.admin.command('shardCollection', conf["database"]+'.warehouse', key={'w_id': 1})
-    client.admin.command('shardCollection', conf["database"]+'.district', key={'w_id': 1})
-    client.admin.command('shardCollection', conf["database"]+'.orders', key={'w_id': 1})
-    client.admin.command('shardCollection', conf["database"]+'.stock', key={'w_id': 1})
-    client.admin.command('shardCollection', conf["database"]+'.customer', key={'w_id': 1})
+    connection.admin.command('enableSharding',conf["database"])
+    connection.admin.command('shardCollection', conf["database"]+'.warehouse', key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.district', key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.orders', key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.stock', key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.customer', key={'w_id': 1})
 
 def preprocess_data():
     # Helper function
