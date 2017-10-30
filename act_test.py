@@ -25,28 +25,28 @@ def act_test(session):
 			new_order_line=list()
 			num_tran+=1
 		elif para[0]=="P":
-			a=transactions.payment_transaction(c_w_id=int(para[1]), c_d_id=int(para[2]), c_id=int(para[3]), payment=float(para[4]), db=session)
+			a=transactions.payment_transaction(c_w_id=int(para[1]), c_d_id=int(para[2]), c_id=int(para[3]), payment=float(para[4]), session=db)
 			num_tran+=1
 		elif para[0]=="D":
-			a=transactions.delivery_transaction(db=session, w_id=int(para[1]), carrier_id=int(para[2]))
+			a=transactions.delivery_transaction(session=db, w_id=int(para[1]), carrier_id=int(para[2]))
 			num_tran+=1
 		elif para[0]=="O":
-			a=transactions.order_status_transaction(db=session, c_w_id=int(para[1]), c_d_id=int(para[2]), c_id=int(para[3]))
+			a=transactions.order_status_transaction(session=db, c_w_id=int(para[1]), c_d_id=int(para[2]), c_id=int(para[3]))
 			num_tran+=1
 		elif para[0]=="S":
-			a=transactions.stock_level_transaction(w_id=int(para[1]),d_id=int(para[2]),T=int(para[3]), L=int(para[4]), db=session)
+			a=transactions.stock_level_transaction(w_id=int(para[1]),d_id=int(para[2]),T=int(para[3]), L=int(para[4]), session=db)
 			num_tran+=1
 		elif para[0]=="I":
-			a=transactions.popular_item_transaction(i="I", w_id=int(para[1]), d_id=int(para[2]),L=int(para[3]), db=session)
+			a=transactions.popular_item_transaction(i="I", w_id=int(para[1]), d_id=int(para[2]),L=int(para[3]), session=db)
 			num_tran+=1
 		elif para[0]=="T":
-			a=transactions.top_balance_transaction(db=session)
+			a=transactions.top_balance_transaction(session=db)
 			num_tran+=1
 		else: #order line in the order
 			new_order_line.append([int(para[0]),int(para[1]),int(para[2])])
 			num_item += 1
 			if num_item == new_order_m:
-				a=transactions.new_order_transaction(c_id=new_order_c_id, w_id=new_order_w_id, d_id=new_order_d_id,M=new_order_m, items=new_order_line, db=session)
+				a=transactions.new_order_transaction(c_id=new_order_c_id, w_id=new_order_w_id, d_id=new_order_d_id,M=new_order_m, items=new_order_line, session=db)
 
 		line = sys.stdin.readline()
 	
