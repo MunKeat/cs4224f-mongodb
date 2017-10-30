@@ -1,5 +1,5 @@
 import pymongo
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from datetime import datetime
 from config import parameters as conf
 
@@ -51,15 +51,12 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     stocks = session.stock
     orders = session.orders
 
-    # Retrieve tax rate and order id from district
-    district = districts.find_one({"w_id": w_id, "d_id": d_id})
+    # Read and update district
+    district = districts.find_one_and_update({"w_id": w_id, "d_id": d_id}, {'$inc': {"d_next_o_id": 1}})
     district_id = "%02d" % d_id
     o_id = district['d_next_o_id']
     w_tax = district['w_tax']
     d_tax = district['d_tax']
-
-    # Update district_next_o_id
-    districts.update_one({"w_id": w_id, "d_id": d_id}, {"$inc": {"d_next_o_id": 1}})
 
     # Retrieve customer info
     customer = customers.find_one({"w_id": w_id, "d_id": d_id, "c_id": c_id}, projection = {'_id':False})
@@ -107,11 +104,16 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         adjusted_qty = adjusted_qty + 100 if adjusted_qty < 10 else adjusted_qty
         is_remote = 1 if ol_supply_w_id != w_id else 0
         is_all_local = False if is_remote == 1 else is_all_local
+        change_in_qty = adjusted_qty - s_quantity
         stocks.update_one(
             {"w_id": ol_supply_w_id, "i_id": ol_i_id},
             {
-                "$inc": {"s_ytd": ol_quantity, "s_order_cnt": 1, "s_remote_cnt": is_remote},
-                "$set": {"s_quantity": adjusted_qty}
+                "$inc": {
+                    "s_ytd": ol_quantity, 
+                    "s_order_cnt": 1, 
+                    "s_remote_cnt": is_remote, 
+                    "s_quantity": change_in_qty
+                }
             }
         )
         s_quantity = adjusted_qty
@@ -187,10 +189,24 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
     customers = session.customer
     districts = session.district
     warehouses = session.warehouse
-    # Update Warehouse, District, Customer
-    warehouses.update_one({"w_id": c_w_id}, {"$inc": {"w_ytd": payment}})
-    districts.update_one({"w_id": c_w_id, "d_id": c_d_id}, {"$inc": {"d_ytd": payment}})
-    customers.update_one(
+    
+    result = {}
+    # Read and update Warehouse
+    warehouse = warehouses.find_one_and_update(
+        {"w_id": c_w_id},
+        {"$inc": {"w_ytd": payment}},
+        projection = {'w_address': True, '_id': False}
+    )
+    result.update(warehouse)
+    # Read and update District
+    district = districts.find_one_and_update(
+        {"w_id": c_w_id, "d_id": c_d_id},
+        {"$inc": {"d_ytd": payment}},
+        projection = {'d_address': True, '_id': False}
+    )
+    result.update(district)
+    # Read and update Customer
+    customer = customers.find_one_and_update(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {
             "$inc": {
@@ -198,37 +214,19 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
                 "c_ytd_payment": payment,
                 "c_payment_cnt": 1
             }
-        }
-    )
-
-    result = {}
-    # Retrieve customer information
-    customer = customers.find_one(
-        {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
+        },
         projection = {
             'c_ytd_payment': False,
             'c_payment_cnt': False,
             'c_delivery_cnt': False,
             'c_data': False,
             '_id': False
-        }
+        },
+        return_document=ReturnDocument.AFTER
     )
     result.update(customer)
-    # Retrieve warehouse information
-    warehouses = warehouses.find_one(
-        {"w_id": c_w_id},
-        projection = {'w_address': True, '_id': False}
-    )
-    result.update(warehouses)
-    # Retrieve district information
-    district = districts.find_one(
-        {"w_id": c_w_id, "d_id": c_d_id},
-        projection = {'d_address': True, '_id': False}
-    )
-    result.update(district)
 
     return output(result)
-
 
 ###############################################################################
 #
