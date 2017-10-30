@@ -54,7 +54,7 @@ def act_test(session):
 
 if __name__ == '__main__':
 	
-	connection = MongoClient(host=["host"],port=conf["port"],w=conf["write_concern"],readConcernLevel=conf["read_concern"])
+	connection = MongoClient(host=conf["host"],port=conf["port"],w=conf["write_concern"],readConcernLevel=conf["read_concern"])
 	db = connection[conf["database"]]
 	
 	num_tran=0
