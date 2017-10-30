@@ -151,7 +151,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session):
 
     # Update order information
     final_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
-    order["o_total_amount"] = final_amount
+    order["o_total_amt"] = final_amount
     order["orderline"] = orderlines
     order["popular_items"] = popular_items
     order["popular_items_name"] = popular_items_name
