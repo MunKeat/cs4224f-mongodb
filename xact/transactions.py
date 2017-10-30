@@ -238,13 +238,14 @@ def delivery_transaction(w_id, carrier_id, session=db):
         #1. retrieve the smallest undelivered order
         orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
-            {"o_id": 1, "ol_amount": 1, "c_id": 1}
+            {"o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1}
         ).sort([("o_id", 1)]).limit(1)
-        if len(orders) == 0:
+        if orders.count() <= 0:
             continue
-        o_id = orders[0].o_id
-        o_total_amt = orders[0].o_total_amt
-        c_id = orders[0].c_id
+        print(orders[0])
+        o_id = orders[0]['o_id']
+        o_total_amt = orders[0]['o_total_amt']
+        c_id = orders[0]['c_id']
 
         #2. update the order entry
         timestamp = datetime.utcnow()
@@ -280,20 +281,20 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
         {"c_name": 1, "c_balance": 1}
     ).limit(1)
     #3. get orderline info
-    ol_delivery_d = orders[0].o_delivery_d
+    ol_delivery_d = orders[0]['o_delivery_d']
     o_items = {}
-    for each_orderline in orders[0].orderline:
+    for each_orderline in orders[0]['orderline']:
         o_items[each_orderline.ol_number] = {}
-        o_items[each_orderline.ol_number]['ol_i_id'] = each_orderline.ol_i_id
-        o_items[each_orderline.ol_number]['ol_supply_w_id'] = each_orderline.ol_supply_w_id
-        o_items[each_orderline.ol_number]['ol_quantity'] = each_orderline.ol_quantity
+        o_items[each_orderline.ol_number]['ol_i_id'] = each_orderline['ol_i_id']
+        o_items[each_orderline.ol_number]['ol_supply_w_id'] = each_orderline['ol_supply_w_id']
+        o_items[each_orderline.ol_number]['ol_quantity'] = each_orderline['ol_quantity']
         o_items[each_orderline.ol_number]['ol_delivery_d'] = ol_delivery_d
     result['items'] = o_items
-    result['c_name'] = customers[0].c_name
-    result['c_balance'] = customers[0].c_balance
-    result['o_id'] = orders[0].o_id
-    result['o_entry_d'] = orders[0].o_entry_d
-    result['o_carrier_id'] = orders[0].o_carrier_id
+    result['c_name'] = customers[0]['c_name']
+    result['c_balance'] = customers[0]['c_balance']
+    result['o_id'] = orders[0]['o_id']
+    result['o_entry_d'] = orders[0]['o_entry_d']
+    result['o_carrier_id'] = orders[0]['o_carrier_id']
     return output(result)
 
 
