@@ -272,7 +272,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
         {"o_id": 1, "orderline": 1, "o_delivery_d": 1}
     ).sort([("o_id", -1)]).limit(1)
-    if len(orders) == 0:
+    if orders.count() <= 0:
         return result
     #2. get the customer info from customer table
     customers = session.customer.find(
