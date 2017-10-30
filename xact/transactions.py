@@ -235,28 +235,21 @@ def payment_transaction(c_w_id, c_d_id, c_id, payment, session=db):
 ###############################################################################
 def delivery_transaction(w_id, carrier_id, session=db):
     for d_id in range(1, 11):
-        #1. retrieve the smallest undelivered order
-        orders = session.orders.find(
+        timestamp = datetime.utcnow()
+        orders = session.orders.find_one_and_update(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
-            {"o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1}
-        ).sort([("o_id", 1)]).limit(1)
-        if orders.count() <= 0:
+            {"$set": {"o_carrier_id": carrier_id, "o_delivery_d": timestamp}},
+            sort = [('o_id', 1)],
+            projection = {"o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1}
+        )
+        if orders is None:
             continue
-        #print(orders[0])
-        o_id = orders[0]['o_id']
         #o_total_amt = orders[0]['o_total_amt']
         #TODO: change to o_total_amt
         o_total_amt = 100
-        c_id = orders[0]['c_id']
+        c_id = orders['c_id']
 
-        #2. update the order entry
-        timestamp = datetime.utcnow()
-        session.orders.update_one(
-            {"w_id": w_id, "d_id": d_id, "o_id": o_id},
-            { "$set": {"o_carrier_id": carrier_id, "o_delivery_d": timestamp}}
-        )
-
-        #3. update customer table
+        #update customer table
         session.customer.update(
             {"w_id": w_id, "d_id": d_id,"c_id": c_id},
             { "$inc": {"c_delivery_cnt": 1, "c_balance": o_total_amt}}
