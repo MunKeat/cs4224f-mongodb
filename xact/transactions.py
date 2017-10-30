@@ -242,13 +242,11 @@ def delivery_transaction(w_id, carrier_id, session=db):
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
             {"$set": {"o_carrier_id": carrier_id, "o_delivery_d": timestamp}},
             sort = [('o_id', 1)],
-            projection = {"o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1}
+            projection = {"o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1, "_id": 0}
         )
         if orders is None:
             continue
-        #o_total_amt = orders[0]['o_total_amt']
-        #TODO: change to o_total_amt
-        o_total_amt = 100
+        o_total_amt = orders['o_total_amt']
         c_id = orders['c_id']
 
         #update customer table
@@ -268,7 +266,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     #1. get last order of a customer
     orders = session.orders.find(
         {"w_id": c_w_id, "d_id": c_d_id, "c_id": c_id},
-        {"o_id": 1, "orderline": 1, "o_delivery_d": 1, "o_entry_d": 1, "o_carrier_id":1}
+        {"o_id": 1, "orderline": 1, "o_delivery_d": 1, "o_entry_d": 1, "o_carrier_id":1, '_id': 0}
     ).sort([("o_id", -1)]).limit(1)
     if orders.count() <= 0:
         return result
