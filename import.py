@@ -122,12 +122,26 @@ def create_indexes():
                                   unique=True)
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
-    connection.admin.command('enableSharding',conf["database"])
-    connection.admin.command('shardCollection', conf["database"]+'.warehouse', key={'w_id': 1})
-    connection.admin.command('shardCollection', conf["database"]+'.district', key={'w_id': 1})
-    connection.admin.command('shardCollection', conf["database"]+'.orders', key={'w_id': 1})
-    connection.admin.command('shardCollection', conf["database"]+'.stock', key={'w_id': 1})
-    connection.admin.command('shardCollection', conf["database"]+'.customer', key={'w_id': 1})
+
+def shard():
+    index_start = time.time()
+    connection.admin.command('enableSharding', conf["database"])
+    connection.admin.command('shardCollection', conf["database"]+'.warehouse',
+                             key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.district',
+                             key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.orders',
+                             key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.stock',
+                             key={'w_id': 1})
+    connection.admin.command('shardCollection', conf["database"]+'.customer',
+                             key={'w_id': 1})
+    if extract_orderline:
+        connection.admin.command('shardCollection',
+                                 conf["database"]+'.orderline',
+                                 key={'w_id': 1})
+    index_end = time.time()
+    debug("SHarding: {}s\n".format(index_end - index_start))
 
 def preprocess_data():
     # Helper function
@@ -237,6 +251,7 @@ def main():
     verify_mongoimport()
     upload_data()
     create_indexes()
+    shard()
     preprocess_data()
     main_end = time.time()
     debug("Total time taken: {}s\n".format(main_end - main_start))
