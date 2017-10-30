@@ -58,6 +58,7 @@ $ cd ~
 $ # Assume the project folder is called cs4224f-mongodb-master.zip
 $ # However, this assumption may not hold in future release - hence make changes accordingly
 $ unzip cs4224f-mongodb-master.zip
+$ rm cs4224f-mongodb-master.zip
 ```
 
 1. Create an environment directory, `env`. We assume that you have set up virtualenv using the above - hence replace the variable \<virtualenv\> with the full path of the file, `virtualenv.py`. Otherwise, you may simply replace \<virtualenv\> with `virtualenv`.
@@ -78,6 +79,8 @@ $ source ./env/bin/activate
 (env) $ pip install -r requirements.txt
 ```
 
+2a. Note that occassionally, `pip install -r requirements.txt` may not work. Our experience is that installing pandas separately should resolve the problem.
+
 3. Download the dataset if you have not, and move them to `/data` folder. Thereafter, move all transaction files to the `/xact/` folder.
 
 ```
@@ -89,6 +92,6 @@ $ source ./env/bin/activate
 
 4. Set up the configuration file. `config.conf`.
 
-5. Run `import.py` to import the data into cassandra
+5. Run `python import.py` to import the data into mongodb
 
 6. You will be prompted to confirm the correct `mongoimport` path
