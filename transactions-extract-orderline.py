@@ -312,6 +312,7 @@ def stock_level_transaction(w_id, d_id, T, L, session=db):
         all_item_id = all_item_id | set(list(order["ordered_items"]))
     # 3. Look up warehouse table to check for stock level of
     #    each item in the set
+    all_item_id = list(all_item_id)
     stocks_below_threshold = session.stock.find(
         {"w_id": w_id, "i_id": {"$in": all_item_id}, "s_quantity": {"$lt": T}}
     ).count()
