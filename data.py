@@ -202,6 +202,8 @@ class Data:
                              inplace=True)
         # 6. Get total amount per order
         grp_order_amt = grp_orderlines['ol_amount'].agg([sum]).reset_index()
+        grp_order_amt.rename(columns={'sum': 'o_total_amt'},
+                             inplace=True)
         # 7. Get o_delivery_d
         grp_pop_deliver = grp_orderlines['ol_delivery_d'].nth(0).reset_index()
         grp_pop_deliver.rename(columns={'ol_delivery_d': 'o_delivery_d'},
