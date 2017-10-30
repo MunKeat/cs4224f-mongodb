@@ -3,8 +3,10 @@ from pymongo import MongoClient
 from datetime import datetime
 from config import parameters as conf
 
-#connection = MongoClient(w=conf["write_concern"],
-#                         readConcernLevel=conf["read_concern"])
+# connection = MongoClient(host=conf["host"],
+#                          port=conf["port"],
+#                          w=conf["write_concern"],
+#                          readConcernLevel=conf["read_concern"])
 #db = connection[conf["database"]]
 db = [] # for not trying to connnect not exist server
 ###############################################################################
@@ -97,7 +99,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         s_quantity = stock['s_quantity']
         i_name = stock['i_name']
         i_price = stock['i_price']
-        
+
         ol_dist_info = stock['district_info']['s_dist_' + district_id]
         ol_amount = ol_quantity * i_price
         # Update stock

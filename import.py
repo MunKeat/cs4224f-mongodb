@@ -9,7 +9,9 @@ from config import parameters as conf
 from data import Data
 
 
-connection = MongoClient(host='localhost',port=47017,w=conf["write_concern"],
+connection = MongoClient(host=conf["host"],
+                         port=conf["port"],
+                         w=conf["write_concern"],
                          readConcernLevel=conf["read_concern"])
 db = connection[conf["database"]]
 
@@ -37,6 +39,8 @@ def upload_data():
                              "--collection", collection,
                              "--writeConcern", conf["write_concern"],
                              "--drop",
+                             "--host", conf["host"],
+                             "--port", str(conf["port"]),
                              "--ignoreBlanks",
                              "--numInsertionWorkers", conf["insert_workers"],
                              "--type", "csv",
@@ -49,6 +53,8 @@ def upload_data():
                              "--collection", collection,
                              "--writeConcern", conf["write_concern"],
                              "--drop",
+                             "--host", conf["host"],
+                             "--port", str(conf["port"]),
                              "--ignoreBlanks",
                              "--numInsertionWorkers", conf["insert_workers"],
                              "--type", "csv",

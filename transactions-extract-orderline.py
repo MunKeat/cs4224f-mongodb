@@ -3,7 +3,9 @@ from pymongo import MongoClient, InsertOne
 from datetime import datetime
 from config import parameters as conf
 
-connection = MongoClient(w=conf["write_concern"],
+connection = MongoClient(host=conf["host"],
+                         port=conf["port"],
+                         w=conf["write_concern"],
                          readConcernLevel=conf["read_concern"])
 db = connection[conf["database"]]
 
@@ -80,7 +82,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     popular_items = []
     popular_items_name = []
     is_all_local = True
-    
+
     # Prepare an orderline for each item
     for ol_number in range(0, M):
         item = items[ol_number]
