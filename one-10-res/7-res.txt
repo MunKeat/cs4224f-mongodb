@@ -1,0 +1,3 @@
+Total number of transactions processed:72706
+Total elapsed time for processing the transactions:1570.718228
+Transaction throughput:46.288379
