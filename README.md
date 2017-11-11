@@ -1,14 +1,17 @@
-### Prerequisites
+## Prerequisites
 
-`TODO`
+The code uses Python (Python 2.7.5), as well as PyMongo.
 
-1. Install MongoDB, unzip it
+We will assume that you are using a Linux-based system, or at least have access to a Linux-based terminal
 
-2. Create a directory that you'd want mongodb to store all its data in.
+In summary, ensure the following:
 
-3. In a separate shell, run the command, `mongod --dbpath=<dir in 2.>`. Note that the executable is located in the MongoDB that you have installed, and unzipped.
+* virtualenv
+* File path for mongoimport
+* Mongodb instances running on all the relevant nodes
+* [Dataset](http://www.comp.nus.edu.sg/%7Ecs4224/4224-project-files.zip)
 
-4. Assuming that the virtualenv is set up, activate it. Then run `python import.py`
+Refer to the section [Setting up virtualenv](#set_virtualenv), and [Obtaining File Path of mongoimport](#get_mongoimport) for help.
 
 <hr/>
 
@@ -35,7 +38,7 @@ $ chmod +x virtualenv.py
 
 <hr/>
 
-### <a name="get_mognoimport"></a> Obtaining File Path of Mongoimport
+### <a name="get_mongoimport"></a> Obtaining File Path of Mongoimport
 
 1. Run the following script to get all the possible path of cqlsh
 ```
@@ -48,7 +51,7 @@ $ # mongoimport: /usr/bin/mongoimport /temp/cs4224f/mongodb/bin/mongoimport
 
 <hr/>
 
-### Setup
+## Setup
 
 0. Download and unzip the project repository - we assume that the project repository zip file downloaded is `cs4224f-mongodb-master.zip`, however, this might change in the future.
 
