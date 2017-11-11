@@ -101,6 +101,14 @@ $ source ./env/bin/activate
 
 4. Set up the configuration file. `config.conf`.
 
-5. Run `python import.py` to import the data into mongodb
+![Configuration file setting](documentation/conf.png)
 
-6. You will be prompted to confirm the correct `mongoimport` path
+4a. Boxed in orange are the variables to configure.
+
+* __read_concern__: Takes on a value of either "local", or "majority" (Ensure consistency with __write_concern__)
+* __write_concern__: Takes on a value of either "1", or "majority" (Ensure consistency with __read_concern__)
+* __host__: Self-explanatory
+* __port__: Self-explanatory
+* __mongoimport__: Set the path of the mongoimport, as outlined in [Obtaining File Path of mongoimport](#get_mongoimport)
+
+5. Run `python import.py` to import the data into mongodb. If you fail to set `mongoimport` in `config.conf`, you will be prompted to do so.
