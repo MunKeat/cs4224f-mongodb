@@ -76,7 +76,7 @@ $ # /home/stuproj/cs4224f/virtualenv-1.9/virtualenv.py env
 ```
 $ source ./env/bin/activate
 (env) $ # You should see (env) prepended to the command prompt
-(env) $ pip install -r requirements.txt
+(env) $ pip install -r requirement.txt
 ```
 
 2a. __Note__ that occassionally, `pip install -r requirements.txt` may not work. Our experience is that installing `numpy`, followed by `pandas` separately should resolve the problem.
@@ -84,7 +84,7 @@ $ source ./env/bin/activate
 ```
 (env) $ pip install numpy==1.13.3
 (env) $ pip install pandas==0.21.0rc1
-(env) $ pip install -r requirements.txt
+(env) $ pip install -r requirement.txt
 ```
 
 3. Download the dataset if you have not, and move them to `/data` folder. Thereafter, move all transaction files to the `/xact/` folder.
