@@ -79,7 +79,13 @@ $ source ./env/bin/activate
 (env) $ pip install -r requirements.txt
 ```
 
-2a. Note that occassionally, `pip install -r requirements.txt` may not work. Our experience is that installing pandas separately should resolve the problem.
+2a. __Note__ that occassionally, `pip install -r requirements.txt` may not work. Our experience is that installing `numpy`, followed by `pandas` separately should resolve the problem.
+
+```
+(env) $ pip install numpy==1.13.3
+(env) $ pip install pandas==0.21.0rc1
+(env) $ pip install -r requirements.txt
+```
 
 3. Download the dataset if you have not, and move them to `/data` folder. Thereafter, move all transaction files to the `/xact/` folder.
 
