@@ -96,7 +96,7 @@ $ source ./env/bin/activate
 (env) $ wget http://www.comp.nus.edu.sg/~cs4224/4224-project-files.zip
 (env) $ unzip 4224-project-files.zip
 (env) $ mv ./4224-project-files/data-files/*.csv ./data
-(env) $ mv ./4224-project-files/xact-files/* ./xact/
+(env) $ mv ./4224-project-files/xact-files/*.txt ./xact-files
 ```
 
 4. Set up the configuration file. `config.conf`.
