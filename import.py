@@ -129,13 +129,13 @@ def shard():
     connection.admin.command('shardCollection', conf["database"]+'.warehouse',
                              key={'w_id': 1})
     connection.admin.command('shardCollection', conf["database"]+'.district',
-                             key={'w_id': 1 , 'd_id' : 1 })
+                             key={'w_id': 1})
     connection.admin.command('shardCollection', conf["database"]+'.orders',
-                             key={'w_id': 1 , 'd_id' : 1 , 'o_id' : 1})
+                             key={'w_id': 1})
     connection.admin.command('shardCollection', conf["database"]+'.stock',
-                             key={'w_id': 1, 'i_id': 1})
+                             key={'w_id': 1})
     connection.admin.command('shardCollection', conf["database"]+'.customer',
-                             key={'w_id': 1 , 'd_id' : 1 , 'c_id' : 1})
+                             key={'w_id': 1})
     if extract_orderline:
         connection.admin.command('shardCollection',
                                  conf["database"]+'.orderline',
