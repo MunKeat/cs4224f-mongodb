@@ -115,10 +115,10 @@ def create_indexes():
     db.customer.create_index([("c_balance", pymongo.DESCENDING)])
     # Index: Orderline
     if extract_orderline:
-        db.orderline.create_index([("w_id", pymongo.DESCENDING),
-                                   ("d_id", pymongo.DESCENDING),
-                                   ("o_id", pymongo.DESCENDING),
-                                   ("ol_number", pymongo.DESCENDING)],
+        db.orderline.create_index([("w_id", pymongo.ASCENDING),
+                                   ("d_id", pymongo.ASCENDING),
+                                   ("o_id", pymongo.ASCENDING),
+                                   ("ol_number", pymongo.ASCENDING)],
                                   unique=True)
     index_end = time.time()
     debug("Index creation: {}s\n".format(index_end - index_start))
