@@ -143,4 +143,4 @@ $ source ./env/bin/activate
 
 3a. (Optional) You may enter `Ctrl A + D` to detach the screen. Use `screen -r` to reattach to the `screen`.
 
-4. At the end of the experiment, collect the output file, `{0.. Number of node - 1}-state.txt` from the `xres` directory.
+4. At the end of the experiment, collect the output file, `{1.. NC}-state.txt` from the `xres` directory.
