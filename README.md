@@ -112,3 +112,35 @@ $ source ./env/bin/activate
 * __mongoimport__: Set the path of the mongoimport, as outlined in [Obtaining File Path of mongoimport](#get_mongoimport)
 
 5. Run `python import.py` to import the data into mongodb. If you fail to set `mongoimport` in `config.conf`, you will be prompted to do so.
+
+<hr/>
+
+### Running MongoDB Benchmarking
+
+We will make the assumption that you have configured all the nodes properly, and that they have access to MongoDB.
+
+1. Ensure that all the nodes are logged in (i.e. that you have access to all the nodes), and that they are currently in the root of the project directory. Assign each node a number, starting from 0, in increasing order.
+
+![Multiple Shell](documentation/multiple-shell.png)
+
+2. For each node, execute the `screen` command, and ensure that `virtualenv` is activated. The `screen` command allows you to run the benchmarking even if you close your terminal.
+
+```
+$ screen
+$
+$ # Move to the root of directory
+# cd ~/cs4224f-mongodb-master
+$
+$ # Activate virtualenv if you have not done so
+$ source ./env/bin/activate
+```
+
+3. On each node, run `source ./total_act_test.sh {0.. Number of node - 1} {$NC}`. For instance,
+
+```
+(env) $ total_act_test.sh 4 40
+```
+
+3a. (Optional) You may enter `Ctrl A + D` to detach the screen. Use `screen -r` to reattach to the `screen`.
+
+4. At the end of the experiment, collect the output file, `{0.. Number of node - 1}-state.txt` from the `xres` directory.
