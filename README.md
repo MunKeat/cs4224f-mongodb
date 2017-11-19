@@ -135,10 +135,16 @@ $ # Activate virtualenv if you have not done so
 $ source ./env/bin/activate
 ```
 
+2a. Activate the `total_act_test.sh` script.
+
+```
+(env) $ chmod +x ./total_act_test.sh
+```
+
 3. On each node, run `source ./total_act_test.sh {0.. Number of node - 1} {$NC}`. For instance,
 
 ```
-(env) $ total_act_test.sh 4 40
+(env) $ source ./total_act_test.sh 4 40
 ```
 
 3a. (Optional) You may enter `Ctrl A + D` to detach the screen. Use `screen -r` to reattach to the `screen`.
