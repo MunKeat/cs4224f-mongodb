@@ -129,7 +129,7 @@ We will make the assumption that you have configured all the nodes properly, and
 $ screen
 $
 $ # Move to the root of directory
-# cd ~/cs4224f-mongodb-master
+$ cd ~/cs4224f-mongodb-master
 $
 $ # Activate virtualenv if you have not done so
 $ source ./env/bin/activate
