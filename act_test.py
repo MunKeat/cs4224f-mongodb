@@ -6,7 +6,10 @@ from config import parameters as conf
 import os
 import sys
 
-import transactions
+if not conf["extract_orderline"]:
+    import transactions
+else:
+    import transactions_extract_orderline as transactions
 
 import time
 

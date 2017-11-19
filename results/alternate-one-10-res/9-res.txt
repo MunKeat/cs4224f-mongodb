@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "act_test.py", line 66, in <module>
+    num_tran=act_test(db)
+  File "act_test.py", line 34, in act_test
+    a=transactions.delivery_transaction(session=db, w_id=int(para[1]), carrier_id=int(para[2]))
+  File "/home/stuproj/cs4224f/mk-mongo/transactions_extract_orderline.py", line 246, in delivery_transaction
+    order = orders.next()
+  File "/home/stuproj/cs4224f/mk-mongo/env/lib/python2.7/site-packages/pymongo/cursor.py", line 1140, in next
+    raise StopIteration
+StopIteration

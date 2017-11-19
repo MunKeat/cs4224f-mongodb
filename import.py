@@ -136,10 +136,12 @@ def shard():
                              key={'w_id': 1})
     connection.admin.command('shardCollection', conf["database"]+'.customer',
                              key={'w_id': 1})
+    from collections import OrderedDict
     if extract_orderline:
         connection.admin.command('shardCollection',
                                  conf["database"]+'.orderline',
-                                 key={'w_id': 1})
+                                 key=OrderedDict([('w_id', 1), ('d_id', 1)])
+                                 )
     index_end = time.time()
     debug("SHarding: {}s\n".format(index_end - index_start))
 
@@ -258,3 +260,4 @@ def main():
 
 
 main()
+

@@ -50,6 +50,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     customers = session.customer
     stocks = session.stock
     orders = session.orders
+    orderline_collection = session.orderline
     # Read and update district
     district = districts.find_one_and_update({"w_id": w_id, "d_id": d_id}, {'$inc': {"d_next_o_id": 1}})
     district_id = "%02d" % d_id
@@ -68,7 +69,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
     order = {
         "w_id": w_id,
         "d_id": d_id,
-        "o_id": d_next_o_id,
+        "o_id": o_id,
         "c_id": c_id,
         "o_entry_d": o_entry_d,
         "o_ol_cnt": M,
@@ -94,7 +95,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         s_quantity = stock["s_quantity"]
         i_name = stock["i_name"]
         i_price = stock["i_price"]
-        ol_dist_info = stock['s_dist_' + district_id]
+        ol_dist_info = stock['district_info']['s_dist_' + district_id]
         ol_amount = ol_quantity * i_price
         # Update stock
         adjusted_qty = s_quantity - ol_quantity
@@ -103,7 +104,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         is_remote = 1 if ol_supply_w_id != w_id else 0
         is_all_local = False if is_remote == 1 else is_all_local
         change_in_qty = adjusted_qty - s_quantity
-        stock.update_one(
+        stocks.update_one(
             {"w_id": ol_supply_w_id, "i_id": ol_i_id},
             {
                 "$inc": {
@@ -137,7 +138,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
         orderline = {
             "w_id": w_id,
             "d_id": d_id,
-            "o_id": d_next_o_id,
+            "o_id": o_id,
             "ol_number": ol_number,
             "ol_i_id": ol_i_id,
             "ol_i_name": i_name,
@@ -151,7 +152,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
 
     # Update order information
     final_amount = total_amount * (1 + d_tax + w_tax) * (1 - c_discount)
-    order["o_total_amount"] = final_amount
+    order["o_total_amt"] = final_amount
     order["popular_items"] = popular_items
     order["popular_items_name"] = popular_items_name
     order["ordered_items"] = ordered_items
@@ -160,7 +161,7 @@ def new_order_transaction(c_id, w_id, d_id, M, items, session=db):
 
     # Insert order
     orders.insert_one(order)
-    orderline.bulk_write(orderlines)
+    orderline_collection.bulk_write(orderlines)
     # Process output
     result = {
         'w_id': w_id,
@@ -238,7 +239,7 @@ def delivery_transaction(w_id, carrier_id, session=db):
         # 1. retrieve the smallest undelivered order
         orders = session.orders.find(
             {"w_id": w_id, "d_id": d_id, "o_carrier_id": None},
-            {"_id": 0, "o_id": 1, "ol_amount": 1, "c_id": 1}
+            {"_id": 0, "o_id": 1, "ol_amount": 1, "c_id": 1, "o_total_amt": 1}
         ).sort([("o_id", 1)]).limit(1)
         if orders.count() == 0:
             continue
@@ -288,7 +289,7 @@ def order_status_transaction(c_w_id, c_d_id, c_id, session=db):
     )
     orderlines = list(orderlines)
     result = {
-        "order": order
+        "order": order,
         "customer": customer,
         "orderlines": orderlines
     }
